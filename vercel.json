@@ -1,9 +1,1 @@
-{
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://www.briblue83.com/$1",
-      "permanent": true
-    }
-  ]
-}
+{}
