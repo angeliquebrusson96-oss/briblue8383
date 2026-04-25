@@ -509,6 +509,14 @@ font-weight:600;
           </div>
           <div class="form-group"><label>Email *</label><input type="email" id="devis-email" placeholder="jean@exemple.fr" autocomplete="email"></div>
           <div class="form-group"><label>Téléphone</label><input type="tel" id="devis-phone" placeholder="06 XX XX XX XX" autocomplete="tel"></div>
+          <div class="form-group">
+            <label>Ville *</label>
+            <select id="devis-ville" required onchange="updateDevisZoneSurcharge(); computeDevisPrice()" style="margin-bottom:6px">
+              <option value="">-- Sélectionner votre ville --</option>
+              <option value="Non définie">Non définie (Autre)</option>
+            </select>
+            <div id="devis-zone-info" style="margin-top:8px;font-size:0.84rem;color:var(--muted)"></div>
+          </div>
           <div class="form-group"><label>Message (optionnel)</label><textarea id="devis-message" rows="3" placeholder="Précisions sur votre piscine, disponibilités…"></textarea></div>
           <input type="hidden" id="devis-estimated-price">
           <button type="button" onclick="submitDevis()" class="btn-submit">Envoyer ma demande de devis →</button>
@@ -877,6 +885,7 @@ font-weight:600;
         <a class="sidebar-link" id="sl-settings" onclick="showAdminTab('settings')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Paramètres</a>
         <a class="sidebar-link" id="sl-clients" onclick="showAdminTab('clients')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Clients</a>
         <a class="sidebar-link" id="sl-devis" onclick="showAdminTab('devis')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:middle'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/></svg></span> Demandes devis</a>
+        <a class="sidebar-link" id="sl-zones" onclick="showAdminTab('zones')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg></span> Zones & Majorations</a>
         <a class="sidebar-link" id="sl-notifs" onclick="showAdminTab('notifs')" style="position:relative"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> Notifications <span id="adminNotifBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--danger);color:var(--white);border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:700;align-items:center;justify-content:center"></span></a>
       </div>
       <div class="sidebar-section">
@@ -974,6 +983,42 @@ font-weight:600;
         <div class="card">
           <div class="card-header"><h2>Toutes les demandes</h2><span id="devis-count-badge" style="font-size:0.82rem;color:var(--muted)"></span></div>
           <div id="adminDemandesDevisTable" class="card-body"></div>
+        </div>
+      </div>
+      <div id="admin-tab-zones" class="hidden">
+        <div class="dash-header"><h1>🗺️ Zones géographiques & Majorations</h1><p>Gérez les zones de couverture et les majorations par zone</p></div>
+        <div class="card">
+          <div class="card-header"><h2>Zone 1 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(1)">+ Ajouter une ville</button></div>
+          <div class="card-body">
+            <div style="margin-bottom:16px">
+              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 1 (€)</label>
+              <input type="number" id="zone1-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+            </div>
+            <div id="zone1-cities" style="display:grid;gap:10px"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <div class="card-header"><h2>Zone 2 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(2)">+ Ajouter une ville</button></div>
+          <div class="card-body">
+            <div style="margin-bottom:16px">
+              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 2 (€)</label>
+              <input type="number" id="zone2-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+            </div>
+            <div id="zone2-cities" style="display:grid;gap:10px"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <div class="card-header"><h2>Zone 3 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(3)">+ Ajouter une ville</button></div>
+          <div class="card-body">
+            <div style="margin-bottom:16px">
+              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 3 (€)</label>
+              <input type="number" id="zone3-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+            </div>
+            <div id="zone3-cities" style="display:grid;gap:10px"></div>
+          </div>
+        </div>
+        <div style="margin-top:28px;text-align:right">
+          <button class="btn-add" onclick="saveZonesAndMajorations()" style="background:linear-gradient(135deg,var(--ocean),var(--sky));color:white;padding:12px 28px"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Sauvegarder toutes les zones</button>
         </div>
       </div>
       <div id="admin-tab-clients" class="hidden">
@@ -1169,6 +1214,96 @@ function addCity(){
 }
 function removeCity(i){const c=getCities();c.splice(i,1);DB.setObj('cities',c);renderCitiesAdmin();renderHeroCities();showToast('Ville supprimée','info');}
 
+/* ===== ZONES GÉOGRAPHIQUES & MAJORATIONS ===== */
+function getZones(){
+  const zones = DB.getObj('geographicZones') || {
+    zone1: { surcharge: 0, cities: [] },
+    zone2: { surcharge: 0, cities: [] },
+    zone3: { surcharge: 0, cities: [] }
+  };
+  return zones;
+}
+
+function renderZonesAdmin(){
+  const zones = getZones();
+  
+  for(let z = 1; z <= 3; z++){
+    const zoneKey = `zone${z}`;
+    const zone = zones[zoneKey];
+    const surchargeInput = document.getElementById(`zone${z}-surcharge`);
+    if(surchargeInput) surchargeInput.value = zone.surcharge || 0;
+    
+    const citiesContainer = document.getElementById(`zone${z}-cities`);
+    if(citiesContainer){
+      citiesContainer.innerHTML = zone.cities.length ? zone.cities.map((city, idx) => `
+        <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
+          <input type="text" value="${city}" onchange="updateCityInZone(${z}, ${idx}, this.value)" 
+            style="flex:1;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
+          <button onclick="removeCityFromZone(${z}, ${idx})" 
+            style="background:#fee2e2;border:none;color:#c0392b;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.82rem">🗑️ Supprimer</button>
+        </div>
+      `).join('') : '<p style="color:var(--muted);font-size:0.88rem">Aucune ville ajoutée à cette zone.</p>';
+    }
+  }
+}
+
+function addCityToZone(zoneNum){
+  const cityName = prompt(`Nom de la ville à ajouter en Zone ${zoneNum}:`);
+  if(!cityName || !cityName.trim()) return;
+  
+  const zones = getZones();
+  const zoneKey = `zone${zoneNum}`;
+  if(!zones[zoneKey].cities.includes(cityName.trim())){
+    zones[zoneKey].cities.push(cityName.trim());
+    DB.setObj('geographicZones', zones);
+    renderZonesAdmin();
+    showToast(`✅ ${cityName} ajoutée à Zone ${zoneNum}`, 'success');
+  } else {
+    showToast('Cette ville existe déjà dans cette zone', 'warning');
+  }
+}
+
+function removeCityFromZone(zoneNum, cityIdx){
+  const zones = getZones();
+  const zoneKey = `zone${zoneNum}`;
+  zones[zoneKey].cities.splice(cityIdx, 1);
+  DB.setObj('geographicZones', zones);
+  renderZonesAdmin();
+  showToast('Ville supprimée', 'info');
+}
+
+function updateCityInZone(zoneNum, cityIdx, newName){
+  const zones = getZones();
+  const zoneKey = `zone${zoneNum}`;
+  zones[zoneKey].cities[cityIdx] = newName.trim();
+  DB.setObj('geographicZones', zones);
+}
+
+function saveZonesAndMajorations(){
+  const zones = getZones();
+  
+  for(let z = 1; z <= 3; z++){
+    const surchargeInput = document.getElementById(`zone${z}-surcharge`);
+    if(surchargeInput){
+      zones[`zone${z}`].surcharge = parseFloat(surchargeInput.value) || 0;
+    }
+  }
+  
+  DB.setObj('geographicZones', zones);
+  showToast('✅ Zones et majorations sauvegardées !', 'success');
+}
+
+function getZoneByCity(cityName){
+  const zones = getZones();
+  for(let z = 1; z <= 3; z++){
+    const zoneKey = `zone${z}`;
+    if(zones[zoneKey].cities.some(c => c.toLowerCase() === cityName.toLowerCase())){
+      return { number: z, ...zones[zoneKey] };
+    }
+  }
+  return null; // Ville non trouvée
+}
+
 /* ===== FORFAITS ===== */
 function getForfaits(){return DB.getObj('forfaits')||[];}
 let _currentForfait = null;
@@ -1200,6 +1335,13 @@ function renderOptionsGrid(){
         <span style="font-size:1.1rem;font-weight:700">+</span> Ajouter au panier
       </button>
     </div>`).join('');
+}
+
+/* ===== ADMIN ZONES EDITOR ===== */
+function renderAdminZonesEditor(){
+  // Vérifier que nous sommes dans la section admin zones
+  if(!document.getElementById('zone1-surcharge')) return;
+  renderZonesAdmin();
 }
 
 /* ===== ADMIN FORFAITS EDITOR ===== */
@@ -1293,16 +1435,20 @@ function openBookingModalWithPrices(forfait){
   const allServices=[...getForfaits().map(f=>f.name),...(DB.getObj('options')||[]).map(o=>o.name),'Autre besoin (précisez)'];
   const sizes=[...new Set(getForfaits().flatMap(f=>f.prices.map(p=>p.label+' m'))),'Autre'];
   const minDate=new Date();minDate.setDate(minDate.getDate()+1);
+  
+  // Trouver le prix minimum du forfait
+  const minPrice = Math.min(...forfait.prices.map(p => p.value));
+  
   document.getElementById('modalContent').className='modal';
   document.getElementById('modalContent').innerHTML=`
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h2>📅 Réserver – ${forfait.name}</h2>
     <p class="modal-sub">${forfait.tagline} · Remplissez ce formulaire. Confirmation sous 24h.</p>
-    <!-- PRICE DISPLAY -->
+    <!-- PRICE DISPLAY WITH ZONES -->
     <div style="background:var(--foam);border-radius:12px;padding:14px 18px;margin-bottom:20px;border:1px solid rgba(0,180,216,0.3)">
       <div style="font-size:0.78rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">💰 Tarifs selon taille de piscine</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${forfait.prices.map(p=>`<div style="background:var(--white);border:1px solid rgba(0,180,216,0.4);border-radius:10px;padding:8px 14px;text-align:center"><div style="font-size:0.75rem;color:var(--muted);font-weight:600">${p.label} m</div><div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--ocean)">${p.value} €</div><div style="font-size:0.7rem;color:var(--muted)">/an</div></div>`).join('')}
+      <div style="display:flex;gap:10px;flex-wrap:wrap" id="bk-prices-display">
+        ${forfait.prices.map(p=>`<div style="background:var(--white);border:1px solid rgba(0,180,216,0.4);border-radius:10px;padding:8px 14px;text-align:center"><div style="font-size:0.75rem;color:var(--muted);font-weight:600">${p.label} m</div><div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--ocean)">à partir de ${p.value} €</div><div style="font-size:0.7rem;color:var(--muted)">/an</div></div>`).join('')}
       </div>
     </div>
     <form onsubmit="submitBooking(event)">
@@ -1331,18 +1477,37 @@ function openBookingModalWithPrices(forfait){
         <div class="form-group"><label>Date souhaitée *</label><input type="date" id="bk-date" required min="${minDate.toISOString().split('T')[0]}"></div>
         <div class="form-group">
           <label>Ville *</label>
-          <select id="bk-adresse" required onchange="toggleBkAutre('ville')" style="margin-bottom:6px">
+          <select id="bk-adresse" required onchange="toggleBkAutre('ville'); updateZoneSurcharge()" style="margin-bottom:6px">
             <option value="">-- Sélectionner --</option>
             ${getCities().map(c=>`<option>${c}</option>`).join('')}
             <option value="Autre">Autre ville</option>
           </select>
           <input id="bk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
+          <div id="zone-info" style="margin-top:8px;font-size:0.84rem;color:var(--muted)"></div>
         </div>
       </div>
       <div class="form-group"><label>Précisions / Message</label><textarea id="bk-message" placeholder="Décrivez votre besoin, état de la piscine, accès…" rows="3"></textarea></div>
       <button type="submit" class="btn-submit">Envoyer ma demande →</button>
     </form>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function updateZoneSurcharge(){
+  const citySelect = document.getElementById('bk-adresse');
+  const zoneInfo = document.getElementById('zone-info');
+  const city = citySelect.value;
+  
+  if(!city || city === 'Autre'){
+    zoneInfo.innerHTML = '';
+    return;
+  }
+  
+  const zone = getZoneByCity(city);
+  if(zone){
+    zoneInfo.innerHTML = `<span style="color:var(--ocean);font-weight:600">Zone ${zone.number}</span> – Majoration: <strong style="color:var(--aqua)">+${zone.surcharge}€</strong>`;
+  } else {
+    zoneInfo.innerHTML = '<span style="color:#f59e0b">⚠️ Zone non définie pour cette ville</span>';
+  }
 }
 
 /* ===== BOOKING MODAL ===== */
@@ -1424,11 +1589,18 @@ function submitBooking(e){
   const villeFinal=villeSel==='Autre'
     ?(document.getElementById('bk-adresse-autre').value||'Autre')
     :villeSel;
+  
+  // Récupérer la zone et la majoration
+  const zone = getZoneByCity(villeFinal);
+  const zoneSurcharge = zone ? zone.surcharge : 0;
+  
   const rdv={id:'r'+Date.now(),
     prenom:document.getElementById('bk-prenom').value,nom:document.getElementById('bk-nom').value,
     email:document.getElementById('bk-email').value,tel:document.getElementById('bk-tel').value,
     forfait:forfaitFinal,taille:document.getElementById('bk-taille').value,
     date:document.getElementById('bk-date').value,adresse:villeFinal,
+    zone: zone ? zone.number : null,
+    zoneSurcharge: zoneSurcharge,
     message:document.getElementById('bk-message').value,
     status:'pending',createdAt:new Date().toLocaleDateString('fr-FR'),userId:currentUser?currentUser.id:null};
   const rdvs=DB.get('rdv');rdvs.push(rdv);DB.set('rdv',rdvs);
@@ -2525,11 +2697,23 @@ function computeDevisPrice(){
   // Filtration surcharge
   const filtType = rules.filtrationTypes.find(f => f.key === _devisFiltration);
   const filtSurcharge = filtType ? filtType.surcharge : 0;
+  
+  // Zone surcharge
+  const citySelect = document.getElementById('devis-ville');
+  let zoneSurcharge = 0;
+  if(citySelect && citySelect.value && citySelect.value !== 'Non définie'){
+    const zone = getZoneByCity(citySelect.value);
+    zoneSurcharge = zone ? zone.surcharge : 0;
+  }
 
-  const total = Math.round((rules.basePrice || 120) + voltSurcharge + filtSurcharge);
+  const total = Math.round((rules.basePrice || 120) + voltSurcharge + filtSurcharge + zoneSurcharge);
 
   priceVal.textContent = total + ' € / intervention';
-  priceDetail.innerHTML = `Base ${rules.basePrice} € + volume ${bracket.label} (+${voltSurcharge} €) + ${filtType?.label||''} (+${filtSurcharge} €)`;
+  let detailText = `Base ${rules.basePrice} € + volume ${bracket.label} (+${voltSurcharge} €) + ${filtType?.label||''} (+${filtSurcharge} €)`;
+  if(zoneSurcharge > 0){
+    detailText += ` + zone (+${zoneSurcharge} €)`;
+  }
+  priceDetail.innerHTML = detailText;
   priceDisp.style.display = 'block';
   contactF.style.display = 'block';
   document.getElementById('devis-estimated-price').value = total;
@@ -2538,7 +2722,36 @@ function computeDevisPrice(){
 /* keep stubs so old callers don't crash */
 function updateDevisPrice(){}
 function selectPoolSize(){}
-function renderDevisCitySelect(){}
+
+function renderDevisCitySelect(){
+  const villeSelect = document.getElementById('devis-ville');
+  if(!villeSelect) return;
+  
+  const cities = getCities();
+  villeSelect.innerHTML = `
+    <option value="">-- Sélectionner votre ville --</option>
+    <option value="Non définie">Non définie (Autre)</option>
+    ${cities.map(c => `<option>${c}</option>`).join('')}
+  `;
+}
+
+function updateDevisZoneSurcharge(){
+  const villeSelect = document.getElementById('devis-ville');
+  const zoneInfo = document.getElementById('devis-zone-info');
+  const city = villeSelect.value;
+  
+  if(!city || city === 'Non définie'){
+    zoneInfo.innerHTML = '';
+    return;
+  }
+  
+  const zone = getZoneByCity(city);
+  if(zone){
+    zoneInfo.innerHTML = `<span style="color:var(--ocean);font-weight:600">Zone ${zone.number}</span> – Majoration: <strong style="color:var(--aqua)">+${zone.surcharge}€</strong>`;
+  } else {
+    zoneInfo.innerHTML = '<span style="color:#f59e0b">⚠️ Zone non définie pour cette ville</span>';
+  }
+}
 
 function submitDevis(){
   const prenom = document.getElementById('devis-prenom').value.trim();
@@ -2548,6 +2761,11 @@ function submitDevis(){
   const vol   = document.getElementById('devis-volume').value;
   const rules = getPricingRules();
   const filtType = rules.filtrationTypes.find(f => f.key === _devisFiltration);
+  
+  // Récupérer la ville et la zone
+  const city = document.getElementById('devis-ville').value;
+  const zone = (city && city !== 'Non définie') ? getZoneByCity(city) : null;
+  
   const d = {
     id: Date.now(), date: new Date().toISOString(),
     prenom, nom, email,
@@ -2555,6 +2773,9 @@ function submitDevis(){
     volumeM3: vol,
     filtration: filtType ? filtType.label : _devisFiltration,
     estimatedPrice: document.getElementById('devis-estimated-price').value,
+    ville: city || 'Non définie',
+    zone: zone ? zone.number : null,
+    zoneSurcharge: zone ? zone.surcharge : 0,
     message: document.getElementById('devis-message').value
   };
   const all = getDemandesDevis(); all.push(d); DB.setObj('demandesDevis', all);
