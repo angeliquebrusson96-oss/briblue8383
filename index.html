@@ -2199,7 +2199,7 @@ function renderClientDash(){
 }
 
 /* ===== ADMIN ===== */
-const ATABS=['overview','rdv','orders','products','formules','settings','devis','clients','notifs','compte'];
+const ATABS=['overview','rdv','orders','products','formules','settings','devis','zones','clients','notifs','compte'];
 function showAdminTab(tab){
   ATABS.forEach(t=>{document.getElementById('admin-tab-'+t)?.classList.toggle('hidden',t!==tab);const sl=document.getElementById('sl-'+t);if(sl)sl.classList.toggle('active',t===tab);});
   if(tab==='overview') renderAdminDash();
@@ -2209,6 +2209,7 @@ function showAdminTab(tab){
   if(tab==='formules'){renderAdminPricingMatrix();renderAdminForfaitsEditor();renderAdminOptionsEditor();}
   if(tab==='settings'){renderCitiesAdmin();renderResendStatus();renderAdminZonesEditor();}
   if(tab==='devis'){renderAdminZonesEditor();renderAdminDemandesDevis();}
+  if(tab==='zones') renderZonesAdmin();
   if(tab==='clients') renderAdminClients();
   if(tab==='notifs') renderAdminNotifs();
   if(tab==='compte') renderAdminCompte();
@@ -3333,3 +3334,321 @@ function updatePoolCalc(){
 </script>
 </body>
 </html>
+
+<script id="safe-admin-demandes-fix">
+/* Correctif admin : empêche la page blanche sur l'onglet Demandes/RDV/Commandes */
+(function(){
+  function safeArray(v){ return Array.isArray(v) ? v : []; }
+  function safeGet(key){
+    try { return safeArray(DB.get(key)); }
+    catch(e){ console.warn('Lecture impossible:', key, e); return []; }
+  }
+  function safeText(v, fallback){
+    if(v === undefined || v === null || v === '') return fallback || '—';
+    return String(v);
+  }
+  function showAdminError(tab, error){
+    const el = document.getElementById('admin-tab-'+tab) || document.getElementById('admin-tab-notifs');
+    if(!el) return;
+    el.classList.remove('hidden');
+    el.innerHTML = '<div class="dash-header"><h1>Erreur d\'affichage</h1><p>Une donnée enregistrée était invalide. La page reste ouverte.</p></div>'+
+      '<div class="card"><div class="card-body"><p style="color:var(--danger);font-weight:700;margin-bottom:8px">'+safeText(error && error.message, 'Erreur inconnue')+'</p>'+
+      '<button class="btn-secondary" onclick="localStorage.removeItem(\'bb_notifications\');localStorage.removeItem(\'bb_demandesDevis\');location.reload();">Réinitialiser les anciennes demandes</button></div></div>';
+  }
+
+  window.updateNotifBadge = function(){
+    try{
+      const unread = safeGet('notifications').filter(n => n && !n.read).length;
+      const badge = document.getElementById('adminNotifBadge');
+      if(!badge) return;
+      badge.textContent = unread > 0 ? unread : '';
+      badge.style.display = unread > 0 ? 'flex' : 'none';
+    }catch(e){ console.warn(e); }
+  };
+
+  window.renderAdminNotifs = function(){
+    const el = document.getElementById('adminNotifsContent');
+    if(!el) return;
+    try{
+      const notifs = safeGet('notifications');
+      notifs.forEach(n => { if(n) n.read = true; });
+      try{ DB.set('notifications', notifs); }catch(e){}
+      updateNotifBadge();
+
+      const pendingRdvs = safeGet('rdv').filter(r => r && (r.status || 'pending') === 'pending').slice().reverse();
+      const pendingOrders = safeGet('orders').filter(o => o && (o.status || 'pending') === 'pending').slice().reverse();
+      const devisRaw = (typeof getDemandesDevis === 'function') ? getDemandesDevis() : safeGet('demandesDevis');
+      const pendingDevis = safeArray(devisRaw).filter(d => d && (!d.status || d.status === 'pending')).slice().reverse();
+      const cards = [];
+
+      pendingRdvs.forEach(r => cards.push(`
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--aqua);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+            <div>
+              <div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--sky);margin-bottom:6px">Nouvelle demande de rendez-vous</div>
+              <div style="font-weight:800;color:var(--deep);font-size:1rem">${safeText(r.prenom,'')} ${safeText(r.nom,'')}</div>
+              <div style="font-size:.84rem;color:var(--muted);margin-top:4px">${safeText(r.forfait,'Forfait non précisé')} · ${safeText(r.taille,'Piscine non précisée')} · ${safeText(r.adresse || r.ville,'Ville non précisée')}</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:4px">${safeText(r.email,'')} ${r.tel ? '· '+safeText(r.tel,'') : ''}</div>
+              ${r.totalPrice ? `<div style="font-size:.86rem;color:var(--ocean);font-weight:800;margin-top:8px">Tarif estimé : ${Number(r.totalPrice).toFixed(0)} €</div>` : ''}
+            </div>
+            <div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn-sm btn-confirm" onclick="updRdv('${safeText(r.id,'')}','confirmed')">Confirmer</button>
+              <button class="btn-sm btn-cancel" onclick="updRdv('${safeText(r.id,'')}','cancelled')">Refuser</button>
+              <button class="btn-sm btn-delete" onclick="deleteRdv('${safeText(r.id,'')}')">Supprimer</button>
+            </div>
+          </div>
+        </div>`));
+
+      pendingOrders.forEach(o => cards.push(`
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--warning);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+            <div>
+              <div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#b45309;margin-bottom:6px">Nouvelle commande</div>
+              <div style="font-weight:800;color:var(--deep);font-size:1rem">${safeText(o.userName,'Client')}</div>
+              <div style="font-size:.84rem;color:var(--muted);margin-top:4px">${safeText(o.productName,'Produit')} · Quantité ${safeText(o.qty,1)} · ${(Number(o.qty||1)*Number(o.price||0)).toFixed(2)} €</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:4px">${safeText(o.userEmail,'')}</div>
+            </div>
+            <div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn-sm btn-confirm" onclick="updOrd('${safeText(o.id,'')}','confirmed')">Confirmer</button>
+              <button class="btn-sm btn-cancel" onclick="updOrd('${safeText(o.id,'')}','cancelled')">Annuler</button>
+              <button class="btn-sm btn-delete" onclick="deleteOrd('${safeText(o.id,'')}')">Supprimer</button>
+            </div>
+          </div>
+        </div>`));
+
+      pendingDevis.forEach(d => cards.push(`
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--gold);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+            <div>
+              <div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Ancienne demande de devis</div>
+              <div style="font-weight:800;color:var(--deep);font-size:1rem">${safeText(d.prenom,'')} ${safeText(d.nom,'')}</div>
+              <div style="font-size:.84rem;color:var(--muted);margin-top:4px">${safeText(d.ville || d.city,'Ville non précisée')} · ${safeText(d.estimatedPrice,'—')} €</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:4px">${safeText(d.email,'')} ${d.phone ? '· '+safeText(d.phone,'') : ''}</div>
+            </div>
+            <div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn-sm btn-confirm" onclick="updDevis('${safeText(d.id,'')}','done')">Traité</button>
+              <button class="btn-sm btn-delete" onclick="deleteDevis('${safeText(d.id,'')}')">Supprimer</button>
+            </div>
+          </div>
+        </div>`));
+
+      const activity = notifs.length ? `<div style="margin-top:22px;border-top:1px solid rgba(0,0,0,.06);padding-top:18px"><div style="font-size:.78rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Historique récent</div>${notifs.slice(0,8).map(n=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,0.04)"><span>🔔</span><div><div style="font-size:.86rem;color:var(--text);font-weight:500">${safeText(n && n.msg,'Notification')}</div><div style="font-size:.76rem;color:var(--muted);margin-top:2px">${safeText(n && n.date,'')}</div></div></div>`).join('')}</div>` : '';
+
+      if(!cards.length){
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>Aucune nouvelle demande à gérer.</p></div>' + activity;
+        return;
+      }
+      el.innerHTML = `<div style="padding:18px 18px 6px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px"><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingRdvs.length}</div><div class="stat-card-label">RDV en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingOrders.length}</div><div class="stat-card-label">Commandes en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingDevis.length}</div><div class="stat-card-label">Anciens devis</div></div></div>${cards.join('')}${activity}</div>`;
+    }catch(e){
+      console.error('Erreur onglet Demandes:', e);
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Impossible d\'afficher les demandes.</p><p style="font-size:.82rem;color:var(--muted);margin-top:6px">'+safeText(e.message,'Erreur inconnue')+'</p></div>';
+    }
+  };
+
+  window.showAdminTab = function(tab){
+    try{
+      const tabs = ['overview','rdv','orders','products','formules','settings','devis','zones','clients','notifs','compte'];
+      tabs.forEach(t => {
+        const panel = document.getElementById('admin-tab-'+t);
+        if(panel) panel.classList.toggle('hidden', t !== tab);
+        const link = document.getElementById('sl-'+t);
+        if(link) link.classList.toggle('active', t === tab);
+      });
+      if(tab === 'overview') return renderAdminDash();
+      if(tab === 'rdv'){
+        const el = document.getElementById('adminAllRdv');
+        if(el) el.innerHTML = rdvTable(safeGet('rdv').slice().reverse(), true);
+        return;
+      }
+      if(tab === 'orders'){
+        const el = document.getElementById('adminAllOrders');
+        if(el) el.innerHTML = ordTable(safeGet('orders').slice().reverse(), true);
+        return;
+      }
+      if(tab === 'products') return renderAdminProducts();
+      if(tab === 'formules') { renderAdminPricingMatrix(); renderAdminForfaitsEditor(); renderAdminOptionsEditor(); return; }
+      if(tab === 'settings') { renderCitiesAdmin(); renderResendStatus(); if(typeof renderAdminZonesEditor === 'function') renderAdminZonesEditor(); return; }
+      if(tab === 'devis') { renderAdminDemandesDevis(); return; }
+      if(tab === 'zones') { renderZonesAdmin(); return; }
+      if(tab === 'clients') return renderAdminClients();
+      if(tab === 'notifs') return renderAdminNotifs();
+      if(tab === 'compte') return renderAdminCompte();
+    }catch(e){
+      console.error('Erreur showAdminTab:', tab, e);
+      showAdminError(tab, e);
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const link = document.getElementById('sl-notifs');
+    if(link){
+      const textNodes = Array.from(link.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+      textNodes.forEach(n => { if(n.textContent.includes('Notifications')) n.textContent = ' Demandes '; });
+    }
+  });
+})();
+</script>
+
+
+<script id="briblue-zones-majorations-hard-fix">
+/* Correctif définitif : onglet Zones & Majorations toujours ouvrable */
+(function(){
+  const ADMIN_TABS = ['overview','rdv','orders','products','formules','settings','devis','zones','clients','notifs','compte'];
+
+  function cleanCity(v){ return String(v || '').trim().replace(/\s+/g, ' '); }
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function toast(msg,type){
+    if(typeof showToast === 'function') showToast(msg,type || 'info');
+    else console.log(msg);
+  }
+  function readZones(){
+    let z = null;
+    try { z = (typeof DB !== 'undefined' && DB.getObj) ? DB.getObj('geographicZones') : null; } catch(e){ z = null; }
+    if(!z || typeof z !== 'object' || Array.isArray(z)) z = {};
+    for(let i=1;i<=3;i++){
+      const k='zone'+i;
+      if(!z[k] || typeof z[k] !== 'object') z[k] = { surcharge:0, cities:[] };
+      if(!Array.isArray(z[k].cities)) z[k].cities = [];
+      z[k].cities = z[k].cities.map(cleanCity).filter(Boolean);
+      z[k].surcharge = Number(z[k].surcharge || 0) || 0;
+    }
+    return z;
+  }
+  function writeZones(z){
+    try { if(typeof DB !== 'undefined' && DB.setObj) DB.setObj('geographicZones', z); } catch(e){ console.warn(e); }
+    try {
+      const cities=[];
+      for(let i=1;i<=3;i++) (z['zone'+i].cities || []).forEach(c=>{
+        const cc=cleanCity(c);
+        if(cc && !cities.some(x=>x.toLowerCase()===cc.toLowerCase())) cities.push(cc);
+      });
+      if(cities.length && typeof DB !== 'undefined' && DB.setObj) DB.setObj('cities', cities);
+    } catch(e){ console.warn(e); }
+  }
+  function ensureZonesPanel(){
+    let panel = document.getElementById('admin-tab-zones');
+    const dash = document.querySelector('#page-admin .dash-content');
+    if(!panel && dash){
+      panel = document.createElement('div');
+      panel.id = 'admin-tab-zones';
+      panel.className = 'hidden';
+      dash.appendChild(panel);
+    }
+    if(!panel) return null;
+    if(!document.getElementById('zone1-cities') || !document.getElementById('zone1-new-city')){
+      panel.innerHTML = `
+        <div class="dash-header"><h1>🗺️ Zones géographiques & Majorations</h1><p>Ajoutez vos villes par zone et définissez une majoration pour chaque zone.</p></div>
+        ${[1,2,3].map(n=>`
+          <div class="card" style="margin-top:${n===1?'0':'22px'}">
+            <div class="card-header"><h2>Zone ${n} - Villes & Majoration</h2></div>
+            <div class="card-body">
+              <div style="margin-bottom:16px">
+                <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone ${n} (€)</label>
+                <input type="number" id="zone${n}-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+              </div>
+              <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+                <input id="zone${n}-new-city" type="text" placeholder="Ajouter une ville en Zone ${n}…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(${n});}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
+                <button class="btn-add" onclick="addCityToZone(${n})">+ Ajouter</button>
+              </div>
+              <div id="zone${n}-cities" style="display:grid;gap:10px"></div>
+            </div>
+          </div>`).join('')}
+        <div style="margin-top:28px;text-align:right"><button class="btn-add" onclick="saveZonesAndMajorations()" style="background:linear-gradient(135deg,var(--ocean),var(--sky));color:white;padding:12px 28px">💾 Sauvegarder toutes les zones</button></div>
+      `;
+    }
+    return panel;
+  }
+  function showOnlyZones(){
+    ADMIN_TABS.forEach(t=>{
+      const p=document.getElementById('admin-tab-'+t); if(p) p.classList.toggle('hidden', t!=='zones');
+      const l=document.getElementById('sl-'+t); if(l) l.classList.toggle('active', t==='zones');
+    });
+    const panel=ensureZonesPanel();
+    if(panel) panel.classList.remove('hidden');
+  }
+
+  window.getZones = readZones;
+  window.getZoneByCity = function(cityName){
+    const city = cleanCity(cityName).toLowerCase();
+    if(!city) return null;
+    const z = readZones();
+    for(let i=1;i<=3;i++){
+      const zone = z['zone'+i];
+      if(zone.cities.some(c=>cleanCity(c).toLowerCase()===city)) return { number:i, surcharge:zone.surcharge, cities:zone.cities };
+    }
+    return null;
+  };
+  window.renderZonesAdmin = function(){
+    const panel=ensureZonesPanel();
+    if(!panel) return;
+    const z=readZones();
+    for(let i=1;i<=3;i++){
+      const zone=z['zone'+i];
+      const input=document.getElementById('zone'+i+'-surcharge');
+      if(input) input.value = zone.surcharge || 0;
+      const list=document.getElementById('zone'+i+'-cities');
+      if(!list) continue;
+      list.innerHTML = zone.cities.length ? zone.cities.map((city,idx)=>`
+        <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;flex-wrap:wrap">
+          <input type="text" value="${esc(city)}" onchange="updateCityInZone(${i},${idx},this.value)" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
+          <button onclick="removeCityFromZone(${i},${idx})" style="background:#fee2e2;border:none;color:#c0392b;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.82rem">🗑️ Supprimer</button>
+        </div>`).join('') : '<p style="color:var(--muted);font-size:0.88rem">Aucune ville ajoutée à cette zone.</p>';
+    }
+  };
+  window.addCityToZone = function(zoneNum){
+    const n=Number(zoneNum); if(n<1 || n>3) return;
+    const input=document.getElementById('zone'+n+'-new-city');
+    const city=cleanCity(input ? input.value : '');
+    if(!city){ if(input) input.focus(); return; }
+    const z=readZones();
+    for(let i=1;i<=3;i++){
+      z['zone'+i].cities = z['zone'+i].cities.filter(c=>cleanCity(c).toLowerCase()!==city.toLowerCase());
+    }
+    z['zone'+n].cities.push(city);
+    z['zone'+n].cities.sort((a,b)=>a.localeCompare(b,'fr'));
+    writeZones(z);
+    if(input) input.value='';
+    renderZonesAdmin();
+    toast('✅ Ville ajoutée en Zone '+n,'success');
+  };
+  window.removeCityFromZone = function(zoneNum,idx){
+    const z=readZones(); const k='zone'+Number(zoneNum);
+    if(z[k]) z[k].cities.splice(Number(idx),1);
+    writeZones(z); renderZonesAdmin(); toast('Ville supprimée','info');
+  };
+  window.updateCityInZone = function(zoneNum,idx,val){
+    const n=Number(zoneNum); const city=cleanCity(val); const z=readZones();
+    for(let i=1;i<=3;i++){
+      z['zone'+i].cities = z['zone'+i].cities.filter((c,j)=>!(cleanCity(c).toLowerCase()===city.toLowerCase() && !(i===n && j===Number(idx))));
+    }
+    if(city) z['zone'+n].cities[Number(idx)] = city; else z['zone'+n].cities.splice(Number(idx),1);
+    writeZones(z); renderZonesAdmin();
+  };
+  window.saveZonesAndMajorations = function(){
+    const z=readZones();
+    for(let i=1;i<=3;i++){
+      const input=document.getElementById('zone'+i+'-surcharge');
+      if(input) z['zone'+i].surcharge = Number(input.value || 0) || 0;
+    }
+    writeZones(z); renderZonesAdmin(); toast('✅ Zones et majorations sauvegardées','success');
+  };
+
+  const oldShow = window.showAdminTab;
+  window.showAdminTab = function(tab){
+    if(tab === 'zones'){
+      try{ showOnlyZones(); renderZonesAdmin(); }
+      catch(e){
+        console.error('Erreur Zones & Majorations:', e);
+        const panel=ensureZonesPanel();
+        if(panel){ panel.classList.remove('hidden'); panel.innerHTML='<div class="dash-header"><h1>Zones & Majorations</h1><p>Erreur corrigible dans les données locales.</p></div><div class="card"><div class="card-body"><p style="color:var(--danger);font-weight:700">'+esc(e.message || e)+'</p><button class="btn-secondary" onclick="localStorage.removeItem(\'bb_geographicZones\');location.reload();">Réinitialiser les zones</button></div></div>'; }
+      }
+      return;
+    }
+    if(typeof oldShow === 'function') return oldShow(tab);
+  };
+})();
+</script>
