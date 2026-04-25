@@ -950,6 +950,10 @@ font-weight:600;
               <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 1 (€)</label>
               <input type="number" id="zone1-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
             </div>
+            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+              <input id="zone1-new-city" type="text" placeholder="Ajouter une ville en Zone 1…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(1);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
+              <button class="btn-add" onclick="addCityToZone(1)">+ Ajouter</button>
+            </div>
             <div id="zone1-cities" style="display:grid;gap:10px"></div>
           </div>
         </div>
@@ -960,6 +964,10 @@ font-weight:600;
               <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 2 (€)</label>
               <input type="number" id="zone2-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
             </div>
+            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+              <input id="zone2-new-city" type="text" placeholder="Ajouter une ville en Zone 2…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(2);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
+              <button class="btn-add" onclick="addCityToZone(2)">+ Ajouter</button>
+            </div>
             <div id="zone2-cities" style="display:grid;gap:10px"></div>
           </div>
         </div>
@@ -969,6 +977,10 @@ font-weight:600;
             <div style="margin-bottom:16px">
               <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 3 (€)</label>
               <input type="number" id="zone3-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+              <input id="zone3-new-city" type="text" placeholder="Ajouter une ville en Zone 3…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(3);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
+              <button class="btn-add" onclick="addCityToZone(3)">+ Ajouter</button>
             </div>
             <div id="zone3-cities" style="display:grid;gap:10px"></div>
           </div>
@@ -1191,94 +1203,138 @@ function addCity(){
 function removeCity(i){const c=getCities();c.splice(i,1);DB.setObj('cities',c);renderCitiesAdmin();renderHeroCities();showToast('Ville supprimée','info');}
 
 /* ===== ZONES GÉOGRAPHIQUES & MAJORATIONS ===== */
+function normalizeCityName(v){
+  return String(v || '').trim().replace(/\s+/g, ' ');
+}
+function escapeAttr(v){
+  return String(v || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function getZones(){
-  const zones = DB.getObj('geographicZones') || {
-    zone1: { surcharge: 0, cities: [] },
-    zone2: { surcharge: 0, cities: [] },
-    zone3: { surcharge: 0, cities: [] }
-  };
+  const zones = DB.getObj('geographicZones') || {};
+  for(let z = 1; z <= 3; z++){
+    const zoneKey = `zone${z}`;
+    if(!zones[zoneKey]) zones[zoneKey] = { surcharge: 0, cities: [] };
+    if(!Array.isArray(zones[zoneKey].cities)) zones[zoneKey].cities = [];
+    zones[zoneKey].cities = zones[zoneKey].cities.map(normalizeCityName).filter(Boolean);
+    zones[zoneKey].surcharge = parseFloat(zones[zoneKey].surcharge) || 0;
+  }
   return zones;
 }
-
+function syncPublicCitiesFromZones(){
+  const zones = getZones();
+  const all = [];
+  for(let z = 1; z <= 3; z++){
+    (zones[`zone${z}`].cities || []).forEach(city => {
+      const clean = normalizeCityName(city);
+      if(clean && !all.some(x => x.toLowerCase() === clean.toLowerCase())) all.push(clean);
+    });
+  }
+  if(all.length) DB.setObj('cities', all);
+}
+function refreshZoneDependentUI(){
+  renderZonesAdmin();
+  renderCitiesAdmin();
+  renderHeroCities();
+  renderBookingSection();
+  renderAdminPricingMatrix();
+}
 function renderZonesAdmin(){
   const zones = getZones();
-  
   for(let z = 1; z <= 3; z++){
     const zoneKey = `zone${z}`;
     const zone = zones[zoneKey];
     const surchargeInput = document.getElementById(`zone${z}-surcharge`);
     if(surchargeInput) surchargeInput.value = zone.surcharge || 0;
-    
     const citiesContainer = document.getElementById(`zone${z}-cities`);
     if(citiesContainer){
       citiesContainer.innerHTML = zone.cities.length ? zone.cities.map((city, idx) => `
-        <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
-          <input type="text" value="${city}" onchange="updateCityInZone(${z}, ${idx}, this.value)" 
-            style="flex:1;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
+        <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;flex-wrap:wrap">
+          <input type="text" value="${escapeAttr(city)}" onchange="updateCityInZone(${z}, ${idx}, this.value)" 
+            style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
           <button onclick="removeCityFromZone(${z}, ${idx})" 
             style="background:#fee2e2;border:none;color:#c0392b;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.82rem">🗑️ Supprimer</button>
         </div>
-      `).join('') : '<p style="color:var(--muted);font-size:0.88rem">Aucune ville ajoutée à cette zone.</p>';
+      `).join('') : '<p style="color:var(--muted);font-size:0.88rem">Aucune ville ajoutée à cette zone. Utilisez le champ ci-dessus pour ajouter une ville.</p>';
     }
   }
 }
-
 function addCityToZone(zoneNum){
-  const cityName = prompt(`Nom de la ville à ajouter en Zone ${zoneNum}:`);
-  if(!cityName || !cityName.trim()) return;
-  
+  const input = document.getElementById(`zone${zoneNum}-new-city`);
+  let cityName = input ? input.value : '';
+  if(!cityName){ cityName = prompt(`Nom de la ville à ajouter en Zone ${zoneNum}:`) || ''; }
+  const clean = normalizeCityName(cityName);
+  if(!clean) return;
   const zones = getZones();
-  const zoneKey = `zone${zoneNum}`;
-  if(!zones[zoneKey].cities.includes(cityName.trim())){
-    zones[zoneKey].cities.push(cityName.trim());
-    DB.setObj('geographicZones', zones);
-    renderZonesAdmin();
-    showToast(`✅ ${cityName} ajoutée à Zone ${zoneNum}`, 'success');
-  } else {
-    showToast('Cette ville existe déjà dans cette zone', 'warning');
+  const targetKey = `zone${zoneNum}`;
+  let movedFrom = null;
+  for(let z = 1; z <= 3; z++){
+    const key = `zone${z}`;
+    const existingIndex = zones[key].cities.findIndex(c => c.toLowerCase() === clean.toLowerCase());
+    if(existingIndex !== -1){
+      if(z === zoneNum){
+        showToast('Cette ville existe déjà dans cette zone', 'warning');
+        if(input) input.value = '';
+        return;
+      }
+      zones[key].cities.splice(existingIndex, 1);
+      movedFrom = z;
+    }
   }
+  zones[targetKey].cities.push(clean);
+  zones[targetKey].cities.sort((a,b)=>a.localeCompare(b,'fr'));
+  DB.setObj('geographicZones', zones);
+  syncPublicCitiesFromZones();
+  if(input) input.value = '';
+  refreshZoneDependentUI();
+  showToast(movedFrom ? `✅ ${clean} déplacée de Zone ${movedFrom} vers Zone ${zoneNum}` : `✅ ${clean} ajoutée à la Zone ${zoneNum}`, 'success');
 }
-
 function removeCityFromZone(zoneNum, cityIdx){
   const zones = getZones();
   const zoneKey = `zone${zoneNum}`;
   zones[zoneKey].cities.splice(cityIdx, 1);
   DB.setObj('geographicZones', zones);
-  renderZonesAdmin();
+  syncPublicCitiesFromZones();
+  refreshZoneDependentUI();
   showToast('Ville supprimée', 'info');
 }
-
 function updateCityInZone(zoneNum, cityIdx, newName){
+  const clean = normalizeCityName(newName);
   const zones = getZones();
   const zoneKey = `zone${zoneNum}`;
-  zones[zoneKey].cities[cityIdx] = newName.trim();
+  if(!clean){ zones[zoneKey].cities.splice(cityIdx, 1); }
+  else {
+    for(let z = 1; z <= 3; z++){
+      const key = `zone${z}`;
+      zones[key].cities = zones[key].cities.filter((c, i) => !(c.toLowerCase() === clean.toLowerCase() && !(z === zoneNum && i === cityIdx)));
+    }
+    zones[zoneKey].cities[cityIdx] = clean;
+  }
   DB.setObj('geographicZones', zones);
+  syncPublicCitiesFromZones();
+  refreshZoneDependentUI();
 }
-
 function saveZonesAndMajorations(){
   const zones = getZones();
-  
   for(let z = 1; z <= 3; z++){
     const surchargeInput = document.getElementById(`zone${z}-surcharge`);
-    if(surchargeInput){
-      zones[`zone${z}`].surcharge = parseFloat(surchargeInput.value) || 0;
-    }
+    if(surchargeInput){ zones[`zone${z}`].surcharge = parseFloat(surchargeInput.value) || 0; }
   }
-  
   DB.setObj('geographicZones', zones);
-  renderAdminPricingMatrix();
-  showToast('✅ Zones et majorations sauvegardées !', 'success');
+  syncPublicCitiesFromZones();
+  refreshZoneDependentUI();
+  showToast('✅ Zones, villes et majorations sauvegardées !', 'success');
 }
-
 function getZoneByCity(cityName){
+  const clean = normalizeCityName(cityName).toLowerCase();
+  if(!clean) return null;
   const zones = getZones();
   for(let z = 1; z <= 3; z++){
     const zoneKey = `zone${z}`;
-    if(zones[zoneKey].cities.some(c => c.toLowerCase() === cityName.toLowerCase())){
+    if(zones[zoneKey].cities.some(c => normalizeCityName(c).toLowerCase() === clean)){
       return { number: z, ...zones[zoneKey] };
     }
   }
-  return null; // Ville non trouvée
+  return null;
 }
 
 function getBookingCityOptions(){const z=getZones();const set=new Set(getCities());for(let i=1;i<=3;i++){(z['zone'+i]?.cities||[]).forEach(c=>{if(c&&c.trim())set.add(c.trim())})}return [...set].sort((a,b)=>a.localeCompare(b,'fr'))}
@@ -2533,7 +2589,13 @@ function renderBookingSection(){
 
   // Zones list
   const zl=document.getElementById('bookingZonesList');
-  if(zl) zl.innerHTML=getCities().map(c=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:10px">📍 ${c}</span>`).join('');
+  if(zl){
+    const zones=getZones();
+    zl.innerHTML=[1,2,3].map(n=>{
+      const list=(zones['zone'+n]?.cities||[]).join(', ');
+      return list ? `<div style="margin-bottom:6px"><strong style="color:var(--sky)">Zone ${n}</strong> : ${list}</div>` : '';
+    }).join('') || getCities().map(c=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:10px">📍 ${c}</span>`).join('');
+  }
 
   // Pre-fill if logged in
   if(currentUser){
