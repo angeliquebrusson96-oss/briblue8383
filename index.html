@@ -339,11 +339,7 @@ font-weight:600;
         <button class="btn-primary" onclick="openBookingModal()"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:7px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Prendre rendez-vous</button>
         <button class="btn-outline" onclick="gotoSection('services-section')">Découvrir nos forfaits</button>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat"><div class="hero-stat-num">3</div><div class="hero-stat-label">Forfaits</div></div>
-        
-        <div class="hero-stat"><div class="hero-stat-num">48h</div><div class="hero-stat-label">Urgence</div></div>
-      </div>
+
     </div>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60" style="display:block;margin-bottom:-4px"><path fill="#ffffff" d="M0,40 C360,80 1080,0 1440,40 L1440,60 L0,60 Z"/></svg>
   </div>
@@ -477,25 +473,34 @@ font-weight:600;
   <section id="devis-section" style="background:var(--sand);padding:80px 5%">
     <div style="max-width:680px;margin:0 auto">
       <div class="section-header" style="margin-bottom:36px">
-        <h2 class="section-title">Obtenez votre tarif en ligne</h2>
-        <p class="section-sub">Sélectionnez votre ville pour une estimation selon votre zone.</p>
+        <div class="section-badge">Devis instantané</div>
+        <h2 class="section-title">Estimez votre forfait</h2>
+        <p class="section-sub">Renseignez les caractéristiques de votre piscine pour obtenir un tarif personnalisé.</p>
       </div>
       <div style="background:var(--white);border-radius:22px;padding:36px;box-shadow:0 4px 24px rgba(10,79,140,0.09);border:1px solid rgba(0,0,0,0.06)">
+
+        <!-- ÉTAPE 1 : Volume -->
         <div class="form-group">
-          <label>Votre ville</label>
-          <select id="devis-city" onchange="updateDevisPrice()">
-            <option value="">— Sélectionnez votre ville —</option>
-          </select>
+          <label>Volume de la piscine (m³) *</label>
+          <input type="number" id="devis-volume" min="1" max="2000" placeholder="Ex : 45" oninput="onDevisInput()" style="max-width:200px">
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Volume = Longueur × Largeur × Profondeur moyenne</div>
         </div>
-        <div id="devis-zone-badge" style="display:none;background:linear-gradient(135deg,#e8f4fd,#d0ebfa);border:1px solid rgba(26,143,209,0.3);border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:0.9rem;color:var(--ocean)"></div>
-        <fieldset id="devis-pool-config" style="display:none;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:18px">
-          <legend style="font-weight:700;color:var(--deep);padding:0 8px;font-size:0.92rem">Volume de votre piscine</legend>
-          <div class="form-check">
-            <input type="checkbox" id="devis-large" onchange="updateDevisPrice()">
-            <label for="devis-large">Ma piscine fait plus de 50 m³ <span style="color:#e65100;font-size:0.82rem">(+20%)</span></label>
+
+        <!-- ÉTAPE 2 : Filtration (apparaît après volume) -->
+        <div id="devis-step-filtration" style="display:none;margin-bottom:22px">
+          <div style="font-size:0.78rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Mode de filtration *</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px" id="devis-filtration-btns">
           </div>
-          </fieldset>
-        <div id="devis-price-display" style="display:none;background:var(--deep);color:#fff;border-radius:12px;padding:16px 22px;font-size:1.25rem;font-weight:700;text-align:center;margin-bottom:22px"></div>
+        </div>
+
+        <!-- ÉTAPE 3 : Prix calculé -->
+        <div id="devis-price-display" style="display:none;background:var(--deep);color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:22px">
+          <div style="font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--aqua);margin-bottom:6px">Tarif estimé — à partir de</div>
+          <div id="devis-price-value" style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900"></div>
+          <div id="devis-price-detail" style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:6px"></div>
+        </div>
+
+        <!-- ÉTAPE 4 : Coordonnées -->
         <div id="devis-contact-form" style="display:none">
           <div style="font-size:0.78rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Vos coordonnées</div>
           <div class="form-row">
@@ -506,9 +511,10 @@ font-weight:600;
           <div class="form-group"><label>Téléphone</label><input type="tel" id="devis-phone" placeholder="06 XX XX XX XX" autocomplete="tel"></div>
           <div class="form-group"><label>Message (optionnel)</label><textarea id="devis-message" rows="3" placeholder="Précisions sur votre piscine, disponibilités…"></textarea></div>
           <input type="hidden" id="devis-estimated-price">
-          <input type="hidden" id="devis-zone-name">
           <button type="button" onclick="submitDevis()" class="btn-submit">Envoyer ma demande de devis →</button>
         </div>
+
+        <!-- Succès -->
         <div id="devis-success" style="display:none;text-align:center;padding:32px 20px">
           <div style="font-size:2.5rem;margin-bottom:12px">✅</div>
           <h3 style="font-family:'Playfair Display',serif;color:var(--deep);margin-bottom:8px">Demande envoyée !</h3>
@@ -954,12 +960,12 @@ font-weight:600;
 
         <div class="card" style="margin-top:22px">
           <div class="card-header">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Tarification par zone</h2>
-            <button class="btn-add" onclick="saveZonesConfirm()">Sauvegarder</button>
+            <h2><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Règles tarifaires du devis</h2>
+            <button class="btn-add" onclick="savePricingRules()">💾 Sauvegarder</button>
           </div>
           <div class="card-body">
-            <p style="color:var(--muted);font-size:0.88rem;margin-bottom:18px">Zone 1 = moins cher · Zone 3 = plus cher. Ajoutez les villes de chaque zone ; le tarif s'applique automatiquement dans le formulaire de devis.</p>
-            <div id="adminZonesEditor"></div>
+            <p style="color:var(--muted);font-size:0.88rem;margin-bottom:22px">Définissez le prix de base et les majorations selon le volume (m³) et le mode de filtration. Le tarif s'applique automatiquement dans le formulaire de devis.</p>
+            <div id="adminPricingEditor"></div>
           </div>
         </div>
       </div>
@@ -2438,124 +2444,227 @@ function getProductIconHTML(name){
 
 
 /* ===== ZONES & DEVIS ===== */
-const DEFAULT_ZONES={'Zone 1':{price:100,cities:[]},'Zone 2':{price:150,cities:[]},'Zone 3':{price:200,cities:[]}};
-function getZones(){return DB.getObj('zones')||DEFAULT_ZONES;}
-function getDemandesDevis(){return DB.getObj('demandesDevis')||[];}
+/* ===== PRICING RULES ENGINE ===== */
+const DEFAULT_PRICING = {
+  basePrice: 120,
+  filtrationTypes: [
+    {key:'sable',   label:'Filtre à sable',   emoji:'🏖️', surcharge:0},
+    {key:'cartouche',label:'Cartouche',        emoji:'🔵', surcharge:10},
+    {key:'de',      label:'DE / Diatomées',    emoji:'🌿', surcharge:20},
+    {key:'sel',     label:'Électrolyse sel',   emoji:'⚡', surcharge:15},
+    {key:'uv',      label:'UV / Lampe',        emoji:'💡', surcharge:15},
+  ],
+  volumeBrackets: [
+    {max:30,  label:'≤ 30 m³',  surcharge:0},
+    {max:60,  label:'31–60 m³', surcharge:20},
+    {max:100, label:'61–100 m³',surcharge:50},
+    {max:9999,label:'> 100 m³', surcharge:80},
+  ]
+};
 
-function renderDevisCitySelect(){
-  const sel=document.getElementById('devis-city');
-  if(!sel)return;
-  const zones=getZones();
-  sel.innerHTML='<option value="">— Sélectionnez votre ville —</option>';
-  Object.entries(zones).forEach(([zname,zdata])=>{
-    if(zdata.cities&&zdata.cities.length){
-      const grp=document.createElement('optgroup');
-      grp.label=zname+' — '+zdata.price+' €';
-      zdata.cities.forEach(city=>{
-        const opt=document.createElement('option');
-        opt.value=city;opt.dataset.zone=zname;opt.dataset.price=zdata.price;
-        opt.textContent=city;grp.appendChild(opt);
-      });
-      sel.appendChild(grp);
+function getPricingRules(){ return DB.getObj('pricingRules') || DEFAULT_PRICING; }
+function getDemandesDevis(){ return DB.getObj('demandesDevis') || []; }
+
+/* ── Client-side devis logic ── */
+let _devisFiltration = null;
+
+function onDevisInput(){
+  const vol = parseFloat(document.getElementById('devis-volume').value);
+  const stepFilt = document.getElementById('devis-step-filtration');
+  if(vol > 0){
+    if(stepFilt.style.display === 'none'){
+      stepFilt.style.display = 'block';
+      renderFiltrationButtons();
     }
-  });
+  } else {
+    stepFilt.style.display = 'none';
+    _devisFiltration = null;
+  }
+  computeDevisPrice();
 }
 
-function updateDevisPrice(){
-  const sel=document.getElementById('devis-city');
-  const badge=document.getElementById('devis-zone-badge');
-  const config=document.getElementById('devis-pool-config');
-  const priceDisp=document.getElementById('devis-price-display');
-  const contactF=document.getElementById('devis-contact-form');
-  const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.dataset.zone){
-    badge.style.display='none';config.style.display='none';
-    priceDisp.style.display='none';contactF.style.display='none';return;
-  }
-  const zone=opt.dataset.zone;
-  const basePrice=parseFloat(opt.dataset.price);
-  badge.style.display='block';
-  badge.innerHTML='<strong>'+zone+'</strong> — tarif de base : <strong style="color:var(--ocean)">'+basePrice+' €</strong> / intervention';
-  config.style.display='block';
-  const large=document.getElementById('devis-large').checked;
-  let total=basePrice;
-  if(large)total*=1.2;
-  total=Math.round(total);
-  priceDisp.style.display='block';
-  priceDisp.innerHTML='Estimation : <strong>'+total+' € / intervention</strong>';
-  contactF.style.display='block';
-  const ep=document.getElementById('devis-estimated-price');
-  const zn=document.getElementById('devis-zone-name');
-  if(ep)ep.value=total;if(zn)zn.value=zone;
+function renderFiltrationButtons(){
+  const rules = getPricingRules();
+  const container = document.getElementById('devis-filtration-btns');
+  if(!container) return;
+  container.innerHTML = rules.filtrationTypes.map(ft => `
+    <button type="button" id="filt-btn-${ft.key}" onclick="selectFiltration('${ft.key}')"
+      style="padding:12px 8px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif">
+      <div style="font-size:1.3rem;margin-bottom:4px">${ft.emoji}</div>
+      <div style="font-weight:700;color:var(--deep);font-size:0.82rem;line-height:1.2">${ft.label}</div>
+      ${ft.surcharge > 0 ? `<div style="font-size:0.7rem;color:#e65100;margin-top:2px">+${ft.surcharge} €</div>` : '<div style="font-size:0.7rem;color:var(--success);margin-top:2px">inclus</div>'}
+    </button>`).join('');
 }
+
+function selectFiltration(key){
+  _devisFiltration = key;
+  const rules = getPricingRules();
+  rules.filtrationTypes.forEach(ft => {
+    const btn = document.getElementById('filt-btn-' + ft.key);
+    if(!btn) return;
+    btn.style.borderColor = ft.key === key ? 'var(--aqua)' : '#e2e8f0';
+    btn.style.background  = ft.key === key ? 'rgba(0,180,216,0.07)' : '#fff';
+  });
+  computeDevisPrice();
+}
+
+function computeDevisPrice(){
+  const vol = parseFloat(document.getElementById('devis-volume')?.value) || 0;
+  const priceDisp = document.getElementById('devis-price-display');
+  const priceVal  = document.getElementById('devis-price-value');
+  const priceDetail = document.getElementById('devis-price-detail');
+  const contactF  = document.getElementById('devis-contact-form');
+  if(!vol || !_devisFiltration){ priceDisp.style.display='none'; contactF.style.display='none'; return; }
+
+  const rules = getPricingRules();
+
+  // Volume bracket surcharge
+  const bracket = rules.volumeBrackets.find(b => vol <= b.max) || rules.volumeBrackets[rules.volumeBrackets.length-1];
+  const voltSurcharge = bracket.surcharge;
+
+  // Filtration surcharge
+  const filtType = rules.filtrationTypes.find(f => f.key === _devisFiltration);
+  const filtSurcharge = filtType ? filtType.surcharge : 0;
+
+  const total = Math.round((rules.basePrice || 120) + voltSurcharge + filtSurcharge);
+
+  priceVal.textContent = total + ' € / intervention';
+  priceDetail.innerHTML = `Base ${rules.basePrice} € + volume ${bracket.label} (+${voltSurcharge} €) + ${filtType?.label||''} (+${filtSurcharge} €)`;
+  priceDisp.style.display = 'block';
+  contactF.style.display = 'block';
+  document.getElementById('devis-estimated-price').value = total;
+}
+
+/* keep stubs so old callers don't crash */
+function updateDevisPrice(){}
+function selectPoolSize(){}
+function renderDevisCitySelect(){}
 
 function submitDevis(){
-  const prenom=document.getElementById('devis-prenom').value.trim();
-  const nom=document.getElementById('devis-nom').value.trim();
-  const email=document.getElementById('devis-email').value.trim();
+  const prenom = document.getElementById('devis-prenom').value.trim();
+  const nom    = document.getElementById('devis-nom').value.trim();
+  const email  = document.getElementById('devis-email').value.trim();
   if(!prenom||!nom||!email){showToast('Veuillez remplir les champs obligatoires (*)','error');return;}
-  const sel=document.getElementById('devis-city');
-  const devis={
-    id:Date.now(),date:new Date().toISOString(),
-    prenom,nom,email,
-    phone:document.getElementById('devis-phone').value,
-    city:sel.value,
-    zone:document.getElementById('devis-zone-name').value,
-    largePiscine:document.getElementById('devis-large').checked,
-    estimatedPrice:document.getElementById('devis-estimated-price').value,
-    message:document.getElementById('devis-message').value
+  const vol   = document.getElementById('devis-volume').value;
+  const rules = getPricingRules();
+  const filtType = rules.filtrationTypes.find(f => f.key === _devisFiltration);
+  const d = {
+    id: Date.now(), date: new Date().toISOString(),
+    prenom, nom, email,
+    phone: document.getElementById('devis-phone').value,
+    volumeM3: vol,
+    filtration: filtType ? filtType.label : _devisFiltration,
+    estimatedPrice: document.getElementById('devis-estimated-price').value,
+    message: document.getElementById('devis-message').value
   };
-  const all=getDemandesDevis();all.push(devis);DB.setObj('demandesDevis',all);
-  ['devis-contact-form','devis-price-display','devis-pool-config','devis-zone-badge'].forEach(id=>{
-    document.getElementById(id).style.display='none';
+  const all = getDemandesDevis(); all.push(d); DB.setObj('demandesDevis', all);
+
+  // Email admin
+  const adminBody = `
+    <div style="background:#f8fafc;border-radius:12px;padding:20px 24px;margin-bottom:24px;border-left:4px solid #00b4d8">
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00b4d8;margin-bottom:8px">Nouvelle demande de devis</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#051e3e">${d.prenom} ${d.nom}</div>
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${infoRow('📧 Email', d.email)}
+      ${infoRow('📞 Téléphone', d.phone||'-')}
+      ${infoRow('💧 Volume piscine', d.volumeM3+' m³')}
+      ${infoRow('⚙️ Filtration', d.filtration)}
+      ${infoRow('💶 Estimation', d.estimatedPrice+' € / intervention')}
+      ${infoRow('💬 Message', d.message||'Aucun')}
+    </table>`;
+  sendEmailViaResend(NOTIF_EMAIL, `📋 Devis — ${d.prenom} ${d.nom}`, emailWrap('Nouvelle demande de devis','#1a8fd1',adminBody));
+
+  // Email client
+  const clientBody = `
+    <p style="color:#1a2742;font-size:0.95rem;line-height:1.7;margin-bottom:22px">Bonjour <strong>${d.prenom}</strong>,<br>Votre demande de devis a bien été reçue. Nous vous transmettrons un devis personnalisé dans les <strong>24 heures ouvrées</strong>.</p>
+    <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-radius:12px;padding:20px 24px;margin-bottom:24px;border:1px solid #bae6fd">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0369a1;margin-bottom:14px">📋 Récapitulatif</div>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow('💧 Volume', d.volumeM3+' m³')}
+        ${infoRow('⚙️ Filtration', d.filtration)}
+        ${infoRow('💶 Estimation', d.estimatedPrice+' € / intervention')}
+      </table>
+    </div>`;
+  sendEmailViaResend(d.email, `📋 Demande de devis reçue — Bri'Blue`, emailWrap("Votre devis est enregistré",'#00b4d8',clientBody));
+
+  addAdminNotif(`📋 Demande de devis de ${d.prenom} ${d.nom} — ${d.volumeM3} m³`);
+  ['devis-contact-form','devis-price-display','devis-step-filtration'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display = 'none';
   });
-  document.getElementById('devis-city').value='';
-  document.getElementById('devis-success').style.display='block';
+  const vol_el = document.getElementById('devis-volume'); if(vol_el) vol_el.value = '';
+  _devisFiltration = null;
+  document.getElementById('devis-success').style.display = 'block';
   showToast('Demande de devis envoyée !','success');
 }
 
-function renderAdminZonesEditor(){
-  const zones=getZones();
-  const el=document.getElementById('adminZonesEditor');
-  if(!el)return;
-  el.innerHTML=Object.entries(zones).map(([zname,zdata])=>{
-    const zid=zname.replace(/ /g,'');
-    return '<div style="border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px;margin-bottom:16px;background:#fafbfe">'
-      +'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">'
-      +'<h3 style="margin:0;font-size:1rem;color:var(--deep);min-width:60px">'+zname+'</h3>'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<label style="font-size:0.82rem;color:var(--muted)">Tarif de base :</label>'
-      +'<input type="number" value="'+zdata.price+'" onchange="updateZonePrice(\''+zname+'\',this.value)" style="width:80px;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:\'DM Sans\',sans-serif">'
-      +'<span style="font-size:0.82rem;color:var(--muted)"> € / intervention</span>'
-      +'</div></div>'
-      +'<div class="tags-row" id="zone-tags-'+zid+'">'
-      +(zdata.cities||[]).map((c,i)=>'<div class="city-tag">'+c+'<button onclick="removeZoneCity(\''+zname+'\','+i+')">✕</button></div>').join('')
-      +'</div>'
-      +'<div style="display:flex;gap:8px;margin-top:12px">'
-      +'<input id="new-city-'+zid+'" type="text" placeholder="Ajouter une ville…" style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;flex:1" onkeydown="if(event.key===\'Enter\')addZoneCity(\''+zname+'\')">'
-      +'<button class="btn-add" onclick="addZoneCity(\''+zname+'\')">+ Ajouter</button>'
-      +'</div></div>';
-  }).join('');
+/* ── Admin pricing editor ── */
+function renderAdminPricingEditor(){
+  const el = document.getElementById('adminPricingEditor');
+  if(!el) return;
+  const rules = getPricingRules();
+
+  el.innerHTML = `
+    <!-- Base price -->
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px;margin-bottom:16px;background:#fafbfe">
+      <h3 style="font-size:0.95rem;color:var(--deep);margin-bottom:14px">💶 Prix de base (toutes piscines)</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" id="pr-base" value="${rules.basePrice}" min="0"
+          style="width:100px;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
+        <span style="color:var(--muted);font-size:0.88rem">€ / intervention</span>
+      </div>
+    </div>
+
+    <!-- Volume brackets -->
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px;margin-bottom:16px;background:#fafbfe">
+      <h3 style="font-size:0.95rem;color:var(--deep);margin-bottom:4px">📐 Majorations par volume (m³)</h3>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px">Ajout au prix de base selon le volume déclaré par le client.</p>
+      <div id="pr-vol-list">
+        ${rules.volumeBrackets.map((b,i) => `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-size:0.82rem;color:var(--deep);min-width:80px;font-weight:600">${b.label}</span>
+            <input type="number" value="${b.surcharge}" min="0"
+              onchange="updateVolBracket(${i},this.value)"
+              style="width:80px;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
+            <span style="font-size:0.82rem;color:var(--muted)">€ de majoration</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Filtration types -->
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:20px;background:#fafbfe">
+      <h3 style="font-size:0.95rem;color:var(--deep);margin-bottom:4px">⚙️ Majorations par filtration</h3>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px">Ajout au prix de base selon le type de filtre.</p>
+      ${rules.filtrationTypes.map((ft,i) => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:1.1rem">${ft.emoji}</span>
+          <span style="font-size:0.88rem;font-weight:600;color:var(--deep);min-width:140px">${ft.label}</span>
+          <input type="number" value="${ft.surcharge}" min="0"
+            onchange="updateFiltSurcharge(${i},this.value)"
+            style="width:80px;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:'DM Sans',sans-serif">
+          <span style="font-size:0.82rem;color:var(--muted)">€ de majoration</span>
+        </div>`).join('')}
+    </div>`;
 }
-function updateZonePrice(zone,val){
-  const z=getZones();z[zone].price=parseFloat(val)||0;DB.setObj('zones',z);renderDevisCitySelect();
+
+function updateVolBracket(idx, val){
+  const r = getPricingRules(); r.volumeBrackets[idx].surcharge = parseFloat(val)||0; DB.setObj('pricingRules',r);
 }
-function addZoneCity(zone){
-  const zid=zone.replace(/ /g,'');
-  const inp=document.getElementById('new-city-'+zid);if(!inp)return;
-  const city=inp.value.trim();if(!city)return;
-  const z=getZones();if(!z[zone].cities)z[zone].cities=[];
-  if(z[zone].cities.includes(city)){showToast('Ville déjà dans cette zone','error');return;}
-  z[zone].cities.push(city);DB.setObj('zones',z);inp.value='';
-  renderAdminZonesEditor();renderDevisCitySelect();showToast('Ville ajoutée à '+zone,'success');
+function updateFiltSurcharge(idx, val){
+  const r = getPricingRules(); r.filtrationTypes[idx].surcharge = parseFloat(val)||0; DB.setObj('pricingRules',r);
 }
-function removeZoneCity(zone,idx){
-  const z=getZones();z[zone].cities.splice(idx,1);DB.setObj('zones',z);
-  renderAdminZonesEditor();renderDevisCitySelect();showToast('Ville supprimée','info');
+function savePricingRules(){
+  const r = getPricingRules();
+  const baseEl = document.getElementById('pr-base');
+  if(baseEl) r.basePrice = parseFloat(baseEl.value)||0;
+  DB.setObj('pricingRules', r);
+  renderFiltrationButtons();
+  showToast('✅ Règles tarifaires sauvegardées !','success');
 }
-function saveZonesConfirm(){
-  renderAdminZonesEditor();renderDevisCitySelect();showToast('✅ Zones sauvegardées !','success');
-}
+
+/* stubs for old zone functions */
+function renderAdminZonesEditor(){ renderAdminPricingEditor(); }
+function saveZonesConfirm(){ savePricingRules(); }
 
 function renderAdminDemandesDevis(){
   const all=getDemandesDevis().slice().reverse();
