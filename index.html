@@ -1198,11 +1198,31 @@ function gotoSection(id){showPage('home');setTimeout(()=>{const el=document.getE
 /* ===== CITIES ===== */
 function getCities(){return DB.getObj('cities')||[];}
 function renderHeroCities(){
-  const c=getCities();
-  document.getElementById('heroStatCities').textContent=c.length+'+';
-  document.getElementById('heroCities').innerHTML='📍 '+c.map(x=>`<span>${x}</span>`).join(' · ')+' <span style="color:rgba(255,255,255,0.4)">et alentours</span>';
-  document.getElementById('contactCities').textContent=c.join(', ')+' et alentours (Var, 83)';
-  document.getElementById('footerText').textContent="© 2025 Bri'Blue – Hyères & alentours (Var 83)";
+  const c = getCities();
+
+  const heroStatCities = document.getElementById('heroStatCities');
+  const heroCities = document.getElementById('heroCities');
+  const contactCities = document.getElementById('contactCities');
+  const footerText = document.getElementById('footerText');
+
+  if (heroStatCities) {
+    heroStatCities.textContent = c.length + '+';
+  }
+
+  if (heroCities) {
+    heroCities.innerHTML =
+      '📍 ' +
+      c.map(x => `<span>${x}</span>`).join(' · ') +
+      ' <span style="color:rgba(255,255,255,0.4)">et alentours</span>';
+  }
+
+  if (contactCities) {
+    contactCities.textContent = c.join(', ') + ' et alentours (Var, 83)';
+  }
+
+  if (footerText) {
+    footerText.textContent = "© 2025 Bri'Blue – Hyères & alentours (Var 83)";
+  }
 }
 function renderCitiesAdmin(){
   const cities=getCities();
