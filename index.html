@@ -431,16 +431,17 @@ font-weight:600;
           </div>
           <div class="form-group">
             <label>Forfait / Service *</label>
-            <select id="ibk-forfait" required onchange="toggleIbkAutre('forfait')">
+            <select id="ibk-forfait" required onchange="toggleIbkAutre('forfait'); updateBookingPriceEstimate('ibk')">
               <option value="">-- Sélectionner --</option>
             </select>
             <input id="ibk-forfait-autre" class="hidden" placeholder="Décrivez votre besoin particulier…" style="margin-top:6px;padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
           </div>
           <div class="form-row">
-            <div class="form-group"><label>Taille piscine *</label>
-              <select id="ibk-taille" required>
+            <div class="form-group"><label>Surface piscine *</label>
+              <select id="ibk-taille" required onchange="updateBookingPriceEstimate('ibk')">
                 <option value="">-- Sélectionner --</option>
-                <option>8×4 m</option><option>10×5 m</option><option>12×6 m</option><option>Autre</option>
+                <option value="lt50">-50 m²</option>
+                <option value="gt50">+50 m²</option>
               </select>
             </div>
             <div class="form-group"><label>Date souhaitée *</label>
@@ -449,11 +450,12 @@ font-weight:600;
           </div>
           <div class="form-group">
             <label>Ville *</label>
-            <select id="ibk-adresse" required onchange="toggleIbkAutre('ville')">
+            <select id="ibk-adresse" required onchange="toggleIbkAutre('ville'); updateBookingPriceEstimate('ibk')">
               <option value="">-- Sélectionner --</option>
             </select>
-            <input id="ibk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" style="margin-top:6px;padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
+            <input id="ibk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" oninput="updateBookingPriceEstimate('ibk')" style="margin-top:6px;padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
           </div>
+          <div id="ibk-price-result" style="background:var(--sand);border:1px solid rgba(0,180,216,0.25);border-radius:14px;padding:16px 18px;margin:6px 0 18px;color:var(--muted);font-size:0.92rem">Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.</div>
           <div class="form-group"><label>Message / précisions</label><textarea id="ibk-message" placeholder="État de la piscine, accès, demande particulière…" rows="3"></textarea></div>
           <button type="submit" class="btn-submit">Envoyer ma demande →</button>
         </form>
@@ -1101,9 +1103,9 @@ function initDB(){
   if(_adm){_adm.email='briblue83@hotmail.com';_adm.pass='bandyt63';_adm.ville='Hyères';DB.set('users',_users);}
   if(!DB.getObj('zones')) DB.setObj('zones',{'Zone 1':{price:100,cities:[]},'Zone 2':{price:150,cities:[]},'Zone 3':{price:200,cities:[]}});
   if(!DB.getObj('forfaits')) DB.setObj('forfaits',[
-    {id:1,name:'Forfait Essentiel',tagline:'Tranquillité 4 Saisons',features:['4 visites / an','Analyse complète','Nettoyage léger','Inspection filtration','Rapport d\'intervention'],prices:[{label:'8×4',value:299},{label:'10×5',value:349},{label:'12×6',value:399}],color:'linear-gradient(135deg,#1a4a7c,#1a8fd1)',featured:false},
-    {id:2,name:'Forfait Confort',tagline:'Sérénité Saisonnière',features:['7 visites (avr. → oct.)','Analyse + équilibrage','Nettoyage complet','Entretien filtration','Rapport détaillé'],prices:[{label:'8×4',value:690},{label:'10×5',value:790},{label:'12×6',value:890}],color:'linear-gradient(135deg,#0a4f8c,#00b4d8)',featured:true},
-    {id:3,name:'Forfait Premium',tagline:'Entretien Total Été',features:['16 visites hebdomadaires','mi-mai → mi-septembre','Analyse complète','Nettoyage intégral','Assistance prioritaire'],prices:[{label:'8×4',value:1590},{label:'10×5',value:1790},{label:'12×6',value:1990}],color:'linear-gradient(135deg,#051e3e,#0a4f8c)',featured:false}
+    {id:1,name:'Forfait Essentiel',tagline:'Tranquillité 4 Saisons',features:['4 visites / an','Analyse complète','Nettoyage léger','Inspection filtration','Rapport d\'intervention'],prices:[{label:'-50 m²',value:299},{label:'+50 m²',value:399}],color:'linear-gradient(135deg,#1a4a7c,#1a8fd1)',featured:false},
+    {id:2,name:'Forfait Confort',tagline:'Sérénité Saisonnière',features:['7 visites (avr. → oct.)','Analyse + équilibrage','Nettoyage complet','Entretien filtration','Rapport détaillé'],prices:[{label:'-50 m²',value:690},{label:'+50 m²',value:890}],color:'linear-gradient(135deg,#0a4f8c,#00b4d8)',featured:true},
+    {id:3,name:'Forfait Premium',tagline:'Entretien Total Été',features:['16 visites hebdomadaires','mi-mai → mi-septembre','Analyse complète','Nettoyage intégral','Assistance prioritaire'],prices:[{label:'-50 m²',value:1590},{label:'+50 m²',value:1990}],color:'linear-gradient(135deg,#051e3e,#0a4f8c)',featured:false}
   ]);
   if(!DB.getObj('options')) DB.setObj('options',[
     {id:1,name:'Ouverture de piscine',price:'120€',desc:'Remise en service complète au printemps',emoji:'🌸'},
@@ -1324,6 +1326,15 @@ function getZoneByCity(cityName){
   return null; // Ville non trouvée
 }
 
+function getBookingCityOptions(){const z=getZones();const set=new Set(getCities());for(let i=1;i<=3;i++){(z['zone'+i]?.cities||[]).forEach(c=>{if(c&&c.trim())set.add(c.trim())})}return [...set].sort((a,b)=>a.localeCompare(b,'fr'))}
+function getForfaitByName(n){return getForfaits().find(f=>f.name===n)||null}
+function getPoolSizeLabel(v){return v==='lt50'?'-50 m²':v==='gt50'?'+50 m²':(v||'')}
+function parsePriceValue(v){if(typeof v==='number')return v;const n=parseFloat(String(v??'0').replace(',','.').replace(/[^0-9.]/g,''));return Number.isFinite(n)?n:0}
+function getForfaitPriceForPoolSize(f,sz){if(!f||!Array.isArray(f.prices)||!f.prices.length)return null;const ps=f.prices.map(p=>({...p,value:parsePriceValue(p.value)}));const small=ps.find(p=>/(-\s*50|moins|<\s*50|≤\s*50)/i.test(String(p.label)));const large=ps.find(p=>/(\+\s*50|plus|>\s*50|≥\s*50)/i.test(String(p.label)));if(sz==='lt50')return small||ps[0];if(sz==='gt50')return large||ps[1]||ps[ps.length-1];return null}
+function formatEuros(v){return parsePriceValue(v).toLocaleString('fr-FR',{maximumFractionDigits:0})+' €'}
+function computeBookingEstimate(prefix='bk'){const forfaitSel=document.getElementById(prefix+'-forfait')?.value||'';const poolSize=document.getElementById(prefix+'-taille')?.value||'';const villeSel=document.getElementById(prefix+'-adresse')?.value||'';const autre=document.getElementById(prefix+'-adresse-autre')?.value||'';const villeFinal=villeSel==='Autre'?autre.trim():villeSel;const forfait=getForfaitByName(forfaitSel);const tier=getForfaitPriceForPoolSize(forfait,poolSize);const zone=villeFinal?getZoneByCity(villeFinal):null;const surcharge=zone?parsePriceValue(zone.surcharge):0;const base=tier?parsePriceValue(tier.value):null;return{forfaitSel,forfait,poolSize,poolSizeLabel:getPoolSizeLabel(poolSize),villeFinal,zone,surcharge,base,total:base!==null?base+surcharge:null}}
+function updateBookingPriceEstimate(prefix='bk'){const box=document.getElementById(prefix+'-price-result');if(!box)return;const e=computeBookingEstimate(prefix);if(!e.forfaitSel||!e.poolSize||!e.villeFinal){box.innerHTML='Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.';box.style.background='var(--sand)';return}if(!e.forfait){box.innerHTML='<strong style="color:var(--deep)">Tarif sur devis</strong><br><span style="color:var(--muted)">Ce service sera confirmé après étude de votre demande.</span>';return}const zoneText=e.zone?('Zone '+e.zone.number+' · majoration '+formatEuros(e.surcharge)):('Zone à confirmer pour '+e.villeFinal);box.style.background='linear-gradient(135deg,rgba(202,240,248,.85),rgba(255,255,255,.95))';box.innerHTML='<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.78rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Tarif estimatif</div><div style="font-size:.92rem;color:var(--text)">'+e.forfait.name+' · '+e.poolSizeLabel+' · '+e.villeFinal+'</div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">Base '+formatEuros(e.base)+' + '+zoneText+'</div></div><div style="font-family:Playfair Display,serif;font-size:1.8rem;font-weight:900;color:var(--ocean);white-space:nowrap">'+formatEuros(e.total)+'</div></div>'}
+
 /* ===== FORFAITS ===== */
 function getForfaits(){return DB.getObj('forfaits')||[];}
 let _currentForfait = null;
@@ -1391,11 +1402,11 @@ function renderAdminForfaitsEditor(){
         <button onclick="addFeature(${fi})" style="margin-top:6px;background:none;border:1px dashed #c0d4e8;color:var(--sky);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;font-family:'DM Sans',sans-serif">+ Prestation</button>
       </div>
       <div class="form-group">
-        <label>Tarifs par taille de piscine</label>
+        <label>Tarifs par surface de piscine (-50 m² / +50 m²)</label>
         ${f.prices.map((p,pi)=>`
           <div class="price-input-row">
             <label class="pi-label">Taille</label>
-            <input class="pi-label" value="${p.label}" onchange="updatePriceLabel(${fi},${pi},this.value)" placeholder="ex: 8×4">
+            <input class="pi-label" value="${p.label}" onchange="updatePriceLabel(${fi},${pi},this.value)" placeholder="ex: -50 m² ou +50 m²">
             <label style="width:50px">Prix €</label>
             <input class="pi-price" type="number" value="${p.value}" onchange="updatePriceValue(${fi},${pi},this.value)">
             <button onclick="removePriceTier(${fi},${pi})" style="background:#fee2e2;border:none;color:var(--danger);padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>
@@ -1412,7 +1423,7 @@ function addFeature(fi){const f=getForfaits();f[fi].features.push('Nouvelle pres
 function updatePriceLabel(fi,pi,val){const f=getForfaits();f[fi].prices[pi].label=val;DB.setObj('forfaits',f);}
 function updatePriceValue(fi,pi,val){const f=getForfaits();f[fi].prices[pi].value=parseFloat(val)||0;DB.setObj('forfaits',f);}
 function removePriceTier(fi,pi){const f=getForfaits();f[fi].prices.splice(pi,1);DB.setObj('forfaits',f);renderAdminForfaitsEditor();}
-function addPriceTier(fi){const f=getForfaits();f[fi].prices.push({label:'Nouvelle taille',value:0});DB.setObj('forfaits',f);renderAdminForfaitsEditor();}
+function addPriceTier(fi){const f=getForfaits();f[fi].prices.push({label:'-50 m²',value:0});DB.setObj('forfaits',f);renderAdminForfaitsEditor();}
 function saveForfaits(){renderForfaitsGrid();renderOptionsGrid();showToast('✅ Formules publiées sur le site !','success');}
 
 function addNewForfait(){
@@ -1453,7 +1464,7 @@ function saveOptions(){renderOptionsGrid();showToast('✅ Options publiées sur 
 /* ===== BOOKING MODAL WITH PRICES ===== */
 function openBookingModalWithPrices(forfait){
   const allServices=[...getForfaits().map(f=>f.name),...(DB.getObj('options')||[]).map(o=>o.name),'Autre besoin (précisez)'];
-  const sizes=[...new Set(getForfaits().flatMap(f=>f.prices.map(p=>p.label+' m'))),'Autre'];
+  const sizes=[{value:'lt50',label:'-50 m²'},{value:'gt50',label:'+50 m²'}];
   const minDate=new Date();minDate.setDate(minDate.getDate()+1);
   
   // Trouver le prix minimum du forfait
@@ -1464,13 +1475,6 @@ function openBookingModalWithPrices(forfait){
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h2>📅 Réserver – ${forfait.name}</h2>
     <p class="modal-sub">${forfait.tagline} · Remplissez ce formulaire. Confirmation sous 24h.</p>
-    <!-- PRICE DISPLAY WITH ZONES -->
-    <div style="background:var(--foam);border-radius:12px;padding:14px 18px;margin-bottom:20px;border:1px solid rgba(0,180,216,0.3)">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">💰 Tarifs selon taille de piscine</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap" id="bk-prices-display">
-        ${forfait.prices.map(p=>`<div style="background:var(--white);border:1px solid rgba(0,180,216,0.4);border-radius:10px;padding:8px 14px;text-align:center"><div style="font-size:0.75rem;color:var(--muted);font-weight:600">${p.label} m</div><div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--ocean)">à partir de ${p.value} €</div><div style="font-size:0.7rem;color:var(--muted)">/an</div></div>`).join('')}
-      </div>
-    </div>
     <form onsubmit="submitBooking(event)">
       <div class="form-row">
         <div class="form-group"><label>Prénom *</label><input id="bk-prenom" required placeholder="Jean" value="${currentUser?currentUser.prenom:''}"></div>
@@ -1483,36 +1487,38 @@ function openBookingModalWithPrices(forfait){
       <div class="form-row">
         <div class="form-group">
           <label>Forfait / Service *</label>
-          <select id="bk-forfait" required onchange="toggleBkAutre('forfait')" style="margin-bottom:6px">
+          <select id="bk-forfait" required onchange="toggleBkAutre('forfait'); updateBookingPriceEstimate('bk')" style="margin-bottom:6px">
             <option value="">-- Sélectionner --</option>
             ${allServices.map(s=>`<option${s===forfait.name?' selected':''}>${s}</option>`).join('')}
           </select>
           <input id="bk-forfait-autre" class="hidden" placeholder="Décrivez votre besoin particulier…" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
         </div>
-        <div class="form-group"><label>Taille piscine *</label>
-          <select id="bk-taille" required><option value="">-- Sélectionner --</option>${sizes.map(s=>`<option>${s}</option>`).join('')}</select>
+        <div class="form-group"><label>Surface piscine *</label>
+          <select id="bk-taille" required onchange="updateBookingPriceEstimate('bk')"><option value="">-- Sélectionner --</option>${sizes.map(s=>`<option value="${s.value}">${s.label}</option>`).join('')}</select>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Date souhaitée *</label><input type="date" id="bk-date" required min="${minDate.toISOString().split('T')[0]}"></div>
         <div class="form-group">
           <label>Ville *</label>
-          <select id="bk-adresse" required onchange="toggleBkAutre('ville'); updateZoneSurcharge()" style="margin-bottom:6px">
+          <select id="bk-adresse" required onchange="toggleBkAutre('ville'); updateBookingPriceEstimate('bk')" style="margin-bottom:6px">
             <option value="">-- Sélectionner --</option>
-            ${getCities().map(c=>`<option>${c}</option>`).join('')}
+            ${getBookingCityOptions().map(c=>`<option>${c}</option>`).join('')}
             <option value="Autre">Autre ville</option>
           </select>
-          <input id="bk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
+          <input id="bk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" oninput="updateBookingPriceEstimate('bk')" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
           <div id="zone-info" style="margin-top:8px;font-size:0.84rem;color:var(--muted)"></div>
         </div>
       </div>
+      <div id="bk-price-result" style="background:var(--sand);border:1px solid rgba(0,180,216,0.25);border-radius:14px;padding:16px 18px;margin:6px 0 18px;color:var(--muted);font-size:0.92rem">Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.</div>
       <div class="form-group"><label>Précisions / Message</label><textarea id="bk-message" placeholder="Décrivez votre besoin, état de la piscine, accès…" rows="3"></textarea></div>
       <button type="submit" class="btn-submit">Envoyer ma demande →</button>
     </form>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
+  updateBookingPriceEstimate('bk');
 }
 
-function updateZoneSurcharge(){
+function updateZoneSurcharge(){ updateBookingPriceEstimate('bk'); return; 
   const citySelect = document.getElementById('bk-adresse');
   const zoneInfo = document.getElementById('zone-info');
   const city = citySelect.value;
@@ -1533,7 +1539,7 @@ function updateZoneSurcharge(){
 /* ===== BOOKING MODAL ===== */
 function openBookingModal(preselect=''){
   const allServices=[...getForfaits().map(f=>f.name),...(DB.getObj('options')||[]).map(o=>o.name),'Autre besoin (précisez)'];
-  const sizes=[...new Set(getForfaits().flatMap(f=>f.prices.map(p=>p.label+' m'))),'Autre'];
+  const sizes=[{value:'lt50',label:'-50 m²'},{value:'gt50',label:'+50 m²'}];
   const minDate=new Date();minDate.setDate(minDate.getDate()+1);
   document.getElementById('modalContent').className='modal';
   document.getElementById('modalContent').innerHTML=`
@@ -1552,34 +1558,36 @@ function openBookingModal(preselect=''){
       <div class="form-row">
         <div class="form-group">
           <label>Forfait / Service *</label>
-          <select id="bk-forfait" required onchange="toggleBkAutre('forfait')" style="margin-bottom:6px">
+          <select id="bk-forfait" required onchange="toggleBkAutre('forfait'); updateBookingPriceEstimate('bk')" style="margin-bottom:6px">
             <option value="">-- Sélectionner --</option>
             ${allServices.map(s=>`<option${s===preselect?' selected':''}>${s}</option>`).join('')}
           </select>
           <input id="bk-forfait-autre" class="hidden" placeholder="Décrivez votre besoin particulier…" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
         </div>
-        <div class="form-group"><label>Taille piscine *</label>
-          <select id="bk-taille" required><option value="">-- Sélectionner --</option>${sizes.map(s=>`<option>${s}</option>`).join('')}</select>
+        <div class="form-group"><label>Surface piscine *</label>
+          <select id="bk-taille" required onchange="updateBookingPriceEstimate('bk')"><option value="">-- Sélectionner --</option>${sizes.map(s=>`<option value="${s.value}">${s.label}</option>`).join('')}</select>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Date souhaitée *</label><input type="date" id="bk-date" required min="${minDate.toISOString().split('T')[0]}"></div>
         <div class="form-group">
           <label>Ville *</label>
-          <select id="bk-adresse" required onchange="toggleBkAutre('ville')" style="margin-bottom:6px">
+          <select id="bk-adresse" required onchange="toggleBkAutre('ville'); updateBookingPriceEstimate('bk')" style="margin-bottom:6px">
             <option value="">-- Sélectionner --</option>
-            ${getCities().map(c=>`<option>${c}</option>`).join('')}
+            ${getBookingCityOptions().map(c=>`<option>${c}</option>`).join('')}
             <option value="Autre">Autre ville</option>
           </select>
-          <input id="bk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
+          <input id="bk-adresse-autre" class="hidden" placeholder="Précisez votre ville…" oninput="updateBookingPriceEstimate('bk')" style="padding:10px 14px;border:1.5px solid var(--aqua);border-radius:10px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.9rem">
         </div>
       </div>
+      <div id="bk-price-result" style="background:var(--sand);border:1px solid rgba(0,180,216,0.25);border-radius:14px;padding:16px 18px;margin:6px 0 18px;color:var(--muted);font-size:0.92rem">Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.</div>
       <div class="form-group"><label>Précisions / Message</label><textarea id="bk-message" placeholder="Décrivez votre besoin, état de la piscine, accès…" rows="3"></textarea></div>
       <button type="submit" class="btn-submit">Envoyer ma demande →</button>
     </form>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
   // pre-select triggers
   if(preselect==='Autre besoin (précisez)') toggleBkAutre('forfait');
+  updateBookingPriceEstimate('bk');
 }
 
 function toggleBkAutre(type){
@@ -1589,6 +1597,7 @@ function toggleBkAutre(type){
     const isAutre=sel.value==='Autre besoin (précisez)';
     inp.classList.toggle('hidden',!isAutre);
     if(isAutre){inp.required=true;sel.required=false;}else{inp.required=false;sel.required=true;}
+    updateBookingPriceEstimate('bk');
   }
   if(type==='ville'){
     const sel=document.getElementById('bk-adresse');
@@ -1596,6 +1605,7 @@ function toggleBkAutre(type){
     const isAutre=sel.value==='Autre';
     inp.classList.toggle('hidden',!isAutre);
     if(isAutre){inp.required=true;sel.required=false;}else{inp.required=false;sel.required=true;}
+    updateBookingPriceEstimate('bk');
   }
 }
 
@@ -1611,13 +1621,16 @@ function submitBooking(e){
     :villeSel;
   
   // Récupérer la zone et la majoration
-  const zone = getZoneByCity(villeFinal);
-  const zoneSurcharge = zone ? zone.surcharge : 0;
+  const estimate = computeBookingEstimate('bk');
+  const zone = estimate.zone;
+  const zoneSurcharge = estimate.surcharge || 0;
   
   const rdv={id:'r'+Date.now(),
     prenom:document.getElementById('bk-prenom').value,nom:document.getElementById('bk-nom').value,
     email:document.getElementById('bk-email').value,tel:document.getElementById('bk-tel').value,
-    forfait:forfaitFinal,taille:document.getElementById('bk-taille').value,
+    forfait:forfaitFinal,taille:estimate.poolSizeLabel || getPoolSizeLabel(document.getElementById('bk-taille').value),
+    poolSizeCategory:estimate.poolSize,
+    basePrice:estimate.base,totalPrice:estimate.total,
     date:document.getElementById('bk-date').value,adresse:villeFinal,
     zone: zone ? zone.number : null,
     zoneSurcharge: zoneSurcharge,
@@ -2135,6 +2148,7 @@ function openProductModal(pid){
     <div class="form-row"><div class="form-group"><label>Prix (€) *</label><input id="pm-p" type="number" step="0.01" value="${p?p.price:''}"></div><div class="form-group"><label>Unité</label><input id="pm-u" value="${p?p.unit:''}"></div><div class="form-group"><label>Stock</label><input id="pm-s" type="number" value="${p?p.stock:0}"></div></div>
     <div class="modal-footer"><button class="btn-secondary" onclick="closeModal()">Annuler</button><button class="btn-primary-sm" onclick="saveProduct(${pid||'null'})">Enregistrer</button></div>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
+  updateBookingPriceEstimate('bk');
 }
 function saveProduct(pid){
   const name=document.getElementById('pm-n').value.trim();
@@ -2400,7 +2414,7 @@ function renderBookingSection(){
   const vsel=document.getElementById('ibk-adresse');
   if(vsel){
     vsel.innerHTML='<option value="">-- Sélectionner --</option>'
-      +getCities().map(c=>`<option>${c}</option>`).join('')
+      +getBookingCityOptions().map(c=>`<option>${c}</option>`).join('')
       +'<option value="Autre">Autre ville</option>';
   }
 
@@ -2420,6 +2434,7 @@ function renderBookingSection(){
     if(f('ibk-email')&&!f('ibk-email').value) f('ibk-email').value=currentUser.email||'';
     if(f('ibk-tel')&&!f('ibk-tel').value) f('ibk-tel').value=currentUser.tel||'';
   }
+  updateBookingPriceEstimate('ibk');
 }
 
 function toggleIbkAutre(type){
@@ -2429,6 +2444,7 @@ function toggleIbkAutre(type){
     const isAutre=sel&&sel.value==='Autre besoin (précisez)';
     inp&&inp.classList.toggle('hidden',!isAutre);
     if(inp){inp.required=isAutre;if(sel) sel.required=!isAutre;}
+    updateBookingPriceEstimate('ibk');
   }
   if(type==='ville'){
     const sel=document.getElementById('ibk-adresse');
@@ -2436,6 +2452,7 @@ function toggleIbkAutre(type){
     const isAutre=sel&&sel.value==='Autre';
     inp&&inp.classList.toggle('hidden',!isAutre);
     if(inp){inp.required=isAutre;if(sel) sel.required=!isAutre;}
+    updateBookingPriceEstimate('ibk');
   }
 }
 
@@ -2449,13 +2466,18 @@ function submitInlineBooking(e){
   const villeFinal=villeSel==='Autre'
     ?(document.getElementById('ibk-adresse-autre').value||'Autre')
     :villeSel;
+  const estimate = computeBookingEstimate('ibk');
   const rdv={id:'r'+Date.now(),
     prenom:document.getElementById('ibk-prenom').value,
     nom:document.getElementById('ibk-nom').value,
     email:document.getElementById('ibk-email').value,
     tel:document.getElementById('ibk-tel').value,
     forfait:forfaitFinal,
-    taille:document.getElementById('ibk-taille').value,
+    taille:estimate.poolSizeLabel || getPoolSizeLabel(document.getElementById('ibk-taille').value),
+    poolSizeCategory:estimate.poolSize,
+    zone:estimate.zone?estimate.zone.number:null,
+    zoneSurcharge:estimate.surcharge||0,
+    basePrice:estimate.base,totalPrice:estimate.total,
     date:document.getElementById('ibk-date').value,
     adresse:villeFinal,
     message:document.getElementById('ibk-message').value,
