@@ -261,6 +261,19 @@ tr:hover td{background:rgba(0,180,216,0.03)}
 .form-check{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .form-check input[type=checkbox]{width:18px;height:18px;border-radius:5px;border:2px solid #d1d9e8;cursor:pointer;accent-color:var(--aqua);flex-shrink:0}
 .form-check label{font-size:0.85rem;color:var(--muted);cursor:pointer;user-select:none;font-weight:500;text-transform:none;letter-spacing:0;margin-bottom:0}
+
+/* Admin pricing matrix */
+.pricing-matrix-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.pricing-matrix{min-width:860px;width:100%;border-collapse:separate;border-spacing:0}
+.pricing-matrix th{background:#f8fafc;color:var(--deep);font-size:.76rem;text-align:center;border-bottom:1px solid #e2e8f0}
+.pricing-matrix td{border-bottom:1px solid #eef2f7;text-align:center;vertical-align:middle}
+.pricing-matrix tr:last-child td{border-bottom:none}
+.pricing-matrix .pm-forfait{text-align:left;font-weight:800;color:var(--deep);min-width:180px}
+.pricing-matrix input{width:96px;padding:9px 10px;border:1.5px solid #dbe4f0;border-radius:9px;text-align:right;font-family:'DM Sans',sans-serif;font-weight:700;color:var(--ocean);background:#fff}
+.pricing-matrix input:focus{border-color:var(--aqua);box-shadow:0 0 0 3px rgba(0,180,216,.10);outline:none}
+.pricing-help{background:linear-gradient(135deg,rgba(202,240,248,.75),rgba(255,255,255,.95));border:1px solid rgba(0,180,216,.22);border-radius:14px;padding:14px 16px;color:var(--text);font-size:.88rem;line-height:1.55;margin-bottom:16px}
+.pricing-shortcut{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:12px 14px;color:var(--muted);font-size:.86rem}
+
 /* Input group helper */
 .input-group-prefix{position:absolute;left:0;top:0;bottom:0;width:44px;background:#f8fafc;border-right:1.5px solid #e8edf5;border-radius:12px 0 0 12px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 /* Smooth focus ring */
@@ -304,7 +317,7 @@ font-weight:600;
     <a onclick="gotoSection('services-section')">Services</a>
     <a onclick="openBookingModal()">Réserver</a>
     <a onclick="gotoSection('products-section')">Produits</a>
-    <a onclick="gotoSection('devis-section')">Devis</a><a onclick="gotoSection('contact-section')">Contact</a>
+    <a onclick="gotoSection('contact-section')">Contact</a>
     <span id="navUserArea"></span>
     <!-- Icône panier -->
     <button onclick="toggleCart()" id="nav-cart-btn" style="background:none;border:none;cursor:pointer;position:relative;padding:4px 6px;display:flex;align-items:center;color:var(--aqua);transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'" title="Mon panier">
@@ -470,69 +483,6 @@ font-weight:600;
     <style>@media(max-width:768px){#booking-section>div{grid-template-columns:1fr}}</style>
   </section>
 
-
-  <!-- DEVIS EN LIGNE -->
-  <section id="devis-section" style="background:var(--sand);padding:80px 5%">
-    <div style="max-width:680px;margin:0 auto">
-      <div class="section-header" style="margin-bottom:36px">
-        <div class="section-badge">Devis instantané</div>
-        <h2 class="section-title">Estimez votre forfait</h2>
-        <p class="section-sub">Renseignez les caractéristiques de votre piscine pour obtenir un tarif personnalisé.</p>
-      </div>
-      <div style="background:var(--white);border-radius:22px;padding:36px;box-shadow:0 4px 24px rgba(10,79,140,0.09);border:1px solid rgba(0,0,0,0.06)">
-
-        <!-- ÉTAPE 1 : Volume -->
-        <div class="form-group">
-          <label>Volume de la piscine (m³) *</label>
-          <input type="number" id="devis-volume" min="1" max="2000" placeholder="Ex : 45" oninput="onDevisInput()" style="max-width:200px">
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Volume = Longueur × Largeur × Profondeur moyenne</div>
-        </div>
-
-        <!-- ÉTAPE 2 : Filtration (apparaît après volume) -->
-        <div id="devis-step-filtration" style="display:none;margin-bottom:22px">
-          <div style="font-size:0.78rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Mode de filtration *</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px" id="devis-filtration-btns">
-          </div>
-        </div>
-
-        <!-- ÉTAPE 3 : Prix calculé -->
-        <div id="devis-price-display" style="display:none;background:var(--deep);color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:22px">
-          <div style="font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--aqua);margin-bottom:6px">Tarif estimé — à partir de</div>
-          <div id="devis-price-value" style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900"></div>
-          <div id="devis-price-detail" style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:6px"></div>
-        </div>
-
-        <!-- ÉTAPE 4 : Coordonnées -->
-        <div id="devis-contact-form" style="display:none">
-          <div style="font-size:0.78rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Vos coordonnées</div>
-          <div class="form-row">
-            <div class="form-group"><label>Prénom *</label><input id="devis-prenom" placeholder="Jean" autocomplete="given-name"></div>
-            <div class="form-group"><label>Nom *</label><input id="devis-nom" placeholder="Dupont" autocomplete="family-name"></div>
-          </div>
-          <div class="form-group"><label>Email *</label><input type="email" id="devis-email" placeholder="jean@exemple.fr" autocomplete="email"></div>
-          <div class="form-group"><label>Téléphone</label><input type="tel" id="devis-phone" placeholder="06 XX XX XX XX" autocomplete="tel"></div>
-          <div class="form-group">
-            <label>Ville *</label>
-            <select id="devis-ville" required onchange="updateDevisZoneSurcharge(); computeDevisPrice()" style="margin-bottom:6px">
-              <option value="">-- Sélectionner votre ville --</option>
-              <option value="Non définie">Non définie (Autre)</option>
-            </select>
-            <div id="devis-zone-info" style="margin-top:8px;font-size:0.84rem;color:var(--muted)"></div>
-          </div>
-          <div class="form-group"><label>Message (optionnel)</label><textarea id="devis-message" rows="3" placeholder="Précisions sur votre piscine, disponibilités…"></textarea></div>
-          <input type="hidden" id="devis-estimated-price">
-          <button type="button" onclick="submitDevis()" class="btn-submit">Envoyer ma demande de devis →</button>
-        </div>
-
-        <!-- Succès -->
-        <div id="devis-success" style="display:none;text-align:center;padding:32px 20px">
-          <div style="font-size:2.5rem;margin-bottom:12px">✅</div>
-          <h3 style="font-family:'Playfair Display',serif;color:var(--deep);margin-bottom:8px">Demande envoyée !</h3>
-          <p style="color:var(--muted);font-size:0.9rem">Merci, nous vous contacterons sous 24h ouvrées avec un devis personnalisé.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- PRODUITS -->
   <section id="products-section" style="background:var(--white);padding:0">
@@ -886,7 +836,7 @@ font-weight:600;
         <a class="sidebar-link" id="sl-formules" onclick="showAdminTab('formules')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Formules & Options</a>
         <a class="sidebar-link" id="sl-settings" onclick="showAdminTab('settings')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Paramètres</a>
         <a class="sidebar-link" id="sl-clients" onclick="showAdminTab('clients')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Clients</a>
-        <a class="sidebar-link" id="sl-devis" onclick="showAdminTab('devis')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:middle'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/></svg></span> Demandes devis</a>
+        <a class="sidebar-link" id="sl-devis" onclick="showAdminTab('devis')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:middle'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/></svg></span> Anciens devis</a>
         <a class="sidebar-link" id="sl-zones" onclick="showAdminTab('zones')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg></span> Zones & Majorations</a>
         <a class="sidebar-link" id="sl-notifs" onclick="showAdminTab('notifs')" style="position:relative"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> Notifications <span id="adminNotifBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--danger);color:var(--white);border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:700;align-items:center;justify-content:center"></span></a>
       </div>
@@ -916,7 +866,11 @@ font-weight:600;
         <div class="card"><div class="card-header"><h2>Catalogue</h2><button class="btn-add" onclick="openProductModal()">+ Ajouter</button></div><div id="adminProductsTable"></div></div>
       </div>
       <div id="admin-tab-formules" class="hidden">
-        <div class="dash-header"><h1>Formules & Options</h1><p>Modifiez prix, noms et descriptifs affichés sur le site</p></div>
+        <div class="dash-header"><h1>Formules & Options</h1><p>Modifiez prix, noms, descriptifs et tarifs par zone affichés sur le site</p></div>
+        <div class="card">
+          <div class="card-header"><h2>💶 Grille rapide des tarifs</h2><button class="btn-add" onclick="saveForfaits()">Publier les prix</button></div>
+          <div class="card-body" id="adminPricingMatrix"></div>
+        </div>
         <div class="card">
           <div class="card-header"><h2><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> Forfaits d'entretien</h2><span style='display:flex;gap:8px'><button class="btn-add" onclick="addNewForfait()">+ Nouveau forfait</button><button class="btn-add" onclick="saveForfaits()"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Publier les modifications</button></div>
           <div class="card-body" id="adminForfaitsEditor"></div>
@@ -981,7 +935,7 @@ font-weight:600;
         </div>
       </div>
       <div id="admin-tab-devis" class="hidden">
-        <div class="dash-header"><h1>Demandes de devis</h1><p>Formulaires reçus depuis le site</p></div>
+        <div class="dash-header"><h1>Anciens devis</h1><p>Historique des anciennes demandes de devis instantané</p></div>
         <div class="card">
           <div class="card-header"><h2>Toutes les demandes</h2><span id="devis-count-badge" style="font-size:0.82rem;color:var(--muted)"></span></div>
           <div id="adminDemandesDevisTable" class="card-body"></div>
@@ -1192,7 +1146,7 @@ function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const p=document.getElementById('page-'+name);
   if(p){p.classList.add('active');window.scrollTo(0,0);}
-  if(name==='home'){renderForfaitsGrid();renderOptionsGrid();renderPublicProducts();renderHeroCities();renderDevisCitySelect();}
+  if(name==='home'){renderForfaitsGrid();renderOptionsGrid();renderPublicProducts();renderHeroCities();}
   if(name==='admin') renderAdminDash();
 }
 function gotoSection(id){showPage('home');setTimeout(()=>{const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},120);}
@@ -1312,6 +1266,7 @@ function saveZonesAndMajorations(){
   }
   
   DB.setObj('geographicZones', zones);
+  renderAdminPricingMatrix();
   showToast('✅ Zones et majorations sauvegardées !', 'success');
 }
 
@@ -1332,11 +1287,77 @@ function getPoolSizeLabel(v){return v==='lt50'?'-50 m²':v==='gt50'?'+50 m²':(v
 function parsePriceValue(v){if(typeof v==='number')return v;const n=parseFloat(String(v??'0').replace(',','.').replace(/[^0-9.]/g,''));return Number.isFinite(n)?n:0}
 function getForfaitPriceForPoolSize(f,sz){if(!f||!Array.isArray(f.prices)||!f.prices.length)return null;const ps=f.prices.map(p=>({...p,value:parsePriceValue(p.value)}));const small=ps.find(p=>/(-\s*50|moins|<\s*50|≤\s*50)/i.test(String(p.label)));const large=ps.find(p=>/(\+\s*50|plus|>\s*50|≥\s*50)/i.test(String(p.label)));if(sz==='lt50')return small||ps[0];if(sz==='gt50')return large||ps[1]||ps[ps.length-1];return null}
 function formatEuros(v){return parsePriceValue(v).toLocaleString('fr-FR',{maximumFractionDigits:0})+' €'}
-function computeBookingEstimate(prefix='bk'){const forfaitSel=document.getElementById(prefix+'-forfait')?.value||'';const poolSize=document.getElementById(prefix+'-taille')?.value||'';const villeSel=document.getElementById(prefix+'-adresse')?.value||'';const autre=document.getElementById(prefix+'-adresse-autre')?.value||'';const villeFinal=villeSel==='Autre'?autre.trim():villeSel;const forfait=getForfaitByName(forfaitSel);const tier=getForfaitPriceForPoolSize(forfait,poolSize);const zone=villeFinal?getZoneByCity(villeFinal):null;const surcharge=zone?parsePriceValue(zone.surcharge):0;const base=tier?parsePriceValue(tier.value):null;return{forfaitSel,forfait,poolSize,poolSizeLabel:getPoolSizeLabel(poolSize),villeFinal,zone,surcharge,base,total:base!==null?base+surcharge:null}}
-function updateBookingPriceEstimate(prefix='bk'){const box=document.getElementById(prefix+'-price-result');if(!box)return;const e=computeBookingEstimate(prefix);if(!e.forfaitSel||!e.poolSize||!e.villeFinal){box.innerHTML='Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.';box.style.background='var(--sand)';return}if(!e.forfait){box.innerHTML='<strong style="color:var(--deep)">Tarif sur devis</strong><br><span style="color:var(--muted)">Ce service sera confirmé après étude de votre demande.</span>';return}const zoneText=e.zone?('Zone '+e.zone.number+' · majoration '+formatEuros(e.surcharge)):('Zone à confirmer pour '+e.villeFinal);box.style.background='linear-gradient(135deg,rgba(202,240,248,.85),rgba(255,255,255,.95))';box.innerHTML='<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.78rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Tarif estimatif</div><div style="font-size:.92rem;color:var(--text)">'+e.forfait.name+' · '+e.poolSizeLabel+' · '+e.villeFinal+'</div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">Base '+formatEuros(e.base)+' + '+zoneText+'</div></div><div style="font-family:Playfair Display,serif;font-size:1.8rem;font-weight:900;color:var(--ocean);white-space:nowrap">'+formatEuros(e.total)+'</div></div>'}
+function getForfaitZonePrice(f, zone, sz){
+  if(!f || !zone || !sz) return null;
+  const zoneKey = 'zone' + zone.number;
+  const sizeKey = sz === 'lt50' ? 'lt50' : sz === 'gt50' ? 'gt50' : null;
+  if(!sizeKey || !f.zonePrices || !f.zonePrices[zoneKey]) return null;
+  const raw = f.zonePrices[zoneKey][sizeKey];
+  if(raw === undefined || raw === null || raw === '') return null;
+  return parsePriceValue(raw);
+}
+function computeBookingEstimate(prefix='bk'){
+  const forfaitSel=document.getElementById(prefix+'-forfait')?.value||'';
+  const poolSize=document.getElementById(prefix+'-taille')?.value||'';
+  const villeSel=document.getElementById(prefix+'-adresse')?.value||'';
+  const autre=document.getElementById(prefix+'-adresse-autre')?.value||'';
+  const villeFinal=villeSel==='Autre'?autre.trim():villeSel;
+  const forfait=getForfaitByName(forfaitSel);
+  const tier=getForfaitPriceForPoolSize(forfait,poolSize);
+  const zone=villeFinal?getZoneByCity(villeFinal):null;
+  const surcharge=zone?parsePriceValue(zone.surcharge):0;
+  const base=tier?parsePriceValue(tier.value):null;
+  const zonePrice=getForfaitZonePrice(forfait,zone,poolSize);
+  const total=zonePrice!==null ? zonePrice : (base!==null && zone ? base+surcharge : null);
+  return{forfaitSel,forfait,poolSize,poolSizeLabel:getPoolSizeLabel(poolSize),villeFinal,zone,surcharge,base,zonePrice,total,priceMode:zonePrice!==null?'zone':(base!==null&&zone?'basePlusSurcharge':'unknown')}
+}
+function updateBookingPriceEstimate(prefix='bk'){
+  const box=document.getElementById(prefix+'-price-result');
+  if(!box)return;
+  const e=computeBookingEstimate(prefix);
+  if(!e.forfaitSel||!e.poolSize||!e.villeFinal){
+    box.innerHTML='Sélectionnez un forfait, une surface et une ville pour afficher le tarif estimatif.';
+    box.style.background='var(--sand)';
+    return;
+  }
+  if(!e.forfait){
+    box.innerHTML='<strong style="color:var(--deep)">Tarif sur devis</strong><br><span style="color:var(--muted)">Ce service sera confirmé après étude de votre demande.</span>';
+    return;
+  }
+  if(!e.zone){
+    box.style.background='linear-gradient(135deg,rgba(254,249,195,.75),rgba(255,255,255,.95))';
+    box.innerHTML='<strong style="color:var(--warning)">Ville non classée en zone</strong><br><span style="color:var(--muted)">Ajoutez cette ville en Zone 1, 2 ou 3 dans l’administration pour afficher un prix automatique.</span>';
+    return;
+  }
+  const detail=e.priceMode==='zone'
+    ? 'Prix personnalisé Zone '+e.zone.number
+    : 'Base '+formatEuros(e.base)+' + majoration Zone '+e.zone.number+' ('+formatEuros(e.surcharge)+')';
+  box.style.background='linear-gradient(135deg,rgba(202,240,248,.85),rgba(255,255,255,.95))';
+  box.innerHTML='<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.78rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Tarif estimatif</div><div style="font-size:.92rem;color:var(--text)">'+e.forfait.name+' · '+e.poolSizeLabel+' · '+e.villeFinal+'</div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">'+detail+'</div></div><div style="font-family:Playfair Display,serif;font-size:1.8rem;font-weight:900;color:var(--ocean);white-space:nowrap">'+formatEuros(e.total)+'</div></div>'
+}
 
 /* ===== FORFAITS ===== */
-function getForfaits(){return DB.getObj('forfaits')||[];}
+function getForfaits(){
+  const f = DB.getObj('forfaits') || [];
+  let changed = false;
+  f.forEach(ff => {
+    if(!ff.prices || !Array.isArray(ff.prices) || ff.prices.length < 2){
+      ff.prices = [{label:'-50 m²',value:0},{label:'+50 m²',value:0}];
+      changed = true;
+    }
+    const lt = parsePriceValue(getForfaitPriceForPoolSize(ff,'lt50')?.value ?? ff.prices[0]?.value ?? 0);
+    const gt = parsePriceValue(getForfaitPriceForPoolSize(ff,'gt50')?.value ?? ff.prices[1]?.value ?? 0);
+    if(!ff.zonePrices){ff.zonePrices = {}; changed = true;}
+    for(let z=1; z<=3; z++){
+      const key = 'zone' + z;
+      if(!ff.zonePrices[key]){ff.zonePrices[key] = {}; changed = true;}
+      if(ff.zonePrices[key].lt50 === undefined || ff.zonePrices[key].lt50 === ''){ff.zonePrices[key].lt50 = lt; changed = true;}
+      if(ff.zonePrices[key].gt50 === undefined || ff.zonePrices[key].gt50 === ''){ff.zonePrices[key].gt50 = gt; changed = true;}
+    }
+  });
+  if(changed) DB.setObj('forfaits', f);
+  return f;
+}
 let _currentForfait = null;
 function renderForfaitsGrid(){
   document.getElementById('forfaitsGrid').innerHTML=getForfaits().map((f,idx)=>`
@@ -1376,6 +1397,83 @@ function renderAdminZonesEditor(){
 }
 
 /* ===== ADMIN FORFAITS EDITOR ===== */
+function renderAdminPricingMatrix(){
+  const el=document.getElementById('adminPricingMatrix');
+  if(!el) return;
+  const fs=getForfaits();
+  const zones=getZones();
+  const citySummary=(z)=>{
+    const list=zones['zone'+z]?.cities||[];
+    return list.length ? list.slice(0,5).join(', ')+(list.length>5?'…':'') : 'Aucune ville';
+  };
+  el.innerHTML=`
+    <div class="pricing-help">
+      <strong>Principe :</strong> le client choisit un forfait, la surface de piscine et sa ville. Le site retrouve automatiquement la zone de la ville, puis affiche le prix correspondant dans cette grille.
+      <br><span style="color:var(--muted)">Exemple : Forfait Confort + piscine -50 m² + ville en Zone 2 = prix de la case Zone 2 / -50 m².</span>
+    </div>
+    <div class="pricing-matrix-wrap">
+      <table class="pricing-matrix">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left">Forfait</th>
+            <th colspan="2">Zone 1<br><small style="font-weight:500;color:var(--muted)">${citySummary(1)}</small></th>
+            <th colspan="2">Zone 2<br><small style="font-weight:500;color:var(--muted)">${citySummary(2)}</small></th>
+            <th colspan="2">Zone 3<br><small style="font-weight:500;color:var(--muted)">${citySummary(3)}</small></th>
+            <th rowspan="2">Action</th>
+          </tr>
+          <tr>
+            <th>-50 m²</th><th>+50 m²</th>
+            <th>-50 m²</th><th>+50 m²</th>
+            <th>-50 m²</th><th>+50 m²</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fs.map((f,fi)=>`
+            <tr>
+              <td class="pm-forfait">${f.name}<br><small style="font-weight:500;color:var(--muted)">${f.tagline||''}</small></td>
+              ${[1,2,3].map(z=>['lt50','gt50'].map(sz=>`
+                <td><input type="number" min="0" step="1" value="${getZonePriceInputValue(f,'zone'+z,sz)}" oninput="updateForfaitZonePrice(${fi},'zone${z}','${sz}',this.value)" aria-label="${f.name} Zone ${z} ${sz}"> €</td>
+              `).join('')).join('')}
+              <td><button class="btn-sm btn-edit" onclick="copyZone1PricesToAll(${fi})">Copier Z1</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-add" onclick="saveForfaits()">✅ Publier la grille</button>
+      <button class="btn-secondary" onclick="showAdminTab('zones')">Modifier les villes par zone</button>
+    </div>`;
+}
+function getZonePriceInputValue(f,zoneKey,sizeKey){
+  if(!f.zonePrices) f.zonePrices={};
+  if(!f.zonePrices[zoneKey]) f.zonePrices[zoneKey]={lt50:0,gt50:0};
+  return parsePriceValue(f.zonePrices[zoneKey][sizeKey]);
+}
+function updateForfaitZonePrice(fi,zoneKey,sizeKey,val){
+  const fs=getForfaits();
+  const f=fs[fi];
+  if(!f) return;
+  if(!f.zonePrices) f.zonePrices={};
+  if(!f.zonePrices[zoneKey]) f.zonePrices[zoneKey]={lt50:0,gt50:0};
+  f.zonePrices[zoneKey][sizeKey]=parseFloat(val)||0;
+  if(zoneKey==='zone1'){
+    f.prices=[{label:'-50 m²',value:parsePriceValue(f.zonePrices.zone1.lt50)},{label:'+50 m²',value:parsePriceValue(f.zonePrices.zone1.gt50)}];
+  }
+  DB.setObj('forfaits',fs);
+}
+function copyZone1PricesToAll(fi){
+  const fs=getForfaits();
+  const f=fs[fi];
+  if(!f) return;
+  if(!f.zonePrices) f.zonePrices={};
+  const z1=f.zonePrices.zone1||{lt50:0,gt50:0};
+  f.zonePrices.zone2={lt50:parsePriceValue(z1.lt50),gt50:parsePriceValue(z1.gt50)};
+  f.zonePrices.zone3={lt50:parsePriceValue(z1.lt50),gt50:parsePriceValue(z1.gt50)};
+  DB.setObj('forfaits',fs);
+  renderAdminPricingMatrix();
+  showToast('Prix de la Zone 1 copiés vers Zones 2 et 3','success');
+}
 function renderAdminForfaitsEditor(){
   document.getElementById('adminForfaitsEditor').innerHTML=getForfaits().map((f,fi)=>`
     <div class="formule-editor">
@@ -1402,16 +1500,8 @@ function renderAdminForfaitsEditor(){
         <button onclick="addFeature(${fi})" style="margin-top:6px;background:none;border:1px dashed #c0d4e8;color:var(--sky);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;font-family:'DM Sans',sans-serif">+ Prestation</button>
       </div>
       <div class="form-group">
-        <label>Tarifs par surface de piscine (-50 m² / +50 m²)</label>
-        ${f.prices.map((p,pi)=>`
-          <div class="price-input-row">
-            <label class="pi-label">Taille</label>
-            <input class="pi-label" value="${p.label}" onchange="updatePriceLabel(${fi},${pi},this.value)" placeholder="ex: -50 m² ou +50 m²">
-            <label style="width:50px">Prix €</label>
-            <input class="pi-price" type="number" value="${p.value}" onchange="updatePriceValue(${fi},${pi},this.value)">
-            <button onclick="removePriceTier(${fi},${pi})" style="background:#fee2e2;border:none;color:var(--danger);padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>
-          </div>`).join('')}
-        <button onclick="addPriceTier(${fi})" style="margin-top:4px;background:none;border:1px dashed #c0d4e8;color:var(--sky);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.82rem;font-family:'DM Sans',sans-serif">+ Taille / prix</button>
+        <label>Tarifs</label>
+        <div class="pricing-shortcut">Les prix se modifient dans la <strong>grille rapide des tarifs</strong> au-dessus : Zone 1, Zone 2, Zone 3, puis -50 m² / +50 m².</div>
       </div>
     </div>`).join('');
 }
@@ -1424,12 +1514,12 @@ function updatePriceLabel(fi,pi,val){const f=getForfaits();f[fi].prices[pi].labe
 function updatePriceValue(fi,pi,val){const f=getForfaits();f[fi].prices[pi].value=parseFloat(val)||0;DB.setObj('forfaits',f);}
 function removePriceTier(fi,pi){const f=getForfaits();f[fi].prices.splice(pi,1);DB.setObj('forfaits',f);renderAdminForfaitsEditor();}
 function addPriceTier(fi){const f=getForfaits();f[fi].prices.push({label:'-50 m²',value:0});DB.setObj('forfaits',f);renderAdminForfaitsEditor();}
-function saveForfaits(){renderForfaitsGrid();renderOptionsGrid();showToast('✅ Formules publiées sur le site !','success');}
+function saveForfaits(){renderForfaitsGrid();renderOptionsGrid();renderAdminPricingMatrix();showToast('✅ Formules et tarifs publiés sur le site !','success');}
 
 function addNewForfait(){
   const f=getForfaits();
   const colors=['linear-gradient(135deg,#1a4a7c,#1a8fd1)','linear-gradient(135deg,#0e6b5e,#1abc9c)','linear-gradient(135deg,#7c1a6b,#c44dff)','linear-gradient(135deg,#7c3a1a,#d4821a)'];
-  f.push({id:Date.now(),name:'Nouveau forfait',tagline:'Sous-titre',features:['Prestation 1','Prestation 2'],prices:[{label:'8×4',value:0},{label:'10×5',value:0},{label:'12×6',value:0}],color:colors[f.length%colors.length],featured:false});
+  f.push({id:Date.now(),name:'Nouveau forfait',tagline:'Sous-titre',features:['Prestation 1','Prestation 2'],prices:[{label:'-50 m²',value:0},{label:'+50 m²',value:0}],zonePrices:{zone1:{lt50:0,gt50:0},zone2:{lt50:0,gt50:0},zone3:{lt50:0,gt50:0}},color:colors[f.length%colors.length],featured:false});
   DB.setObj('forfaits',f);
   renderAdminForfaitsEditor();
   showToast('Nouveau forfait ajouté — pensez à publier !','success');
@@ -2060,7 +2150,7 @@ function showAdminTab(tab){
   if(tab==='rdv') document.getElementById('adminAllRdv').innerHTML=rdvTable(DB.get('rdv').reverse(),true);
   if(tab==='orders') document.getElementById('adminAllOrders').innerHTML=ordTable(DB.get('orders').reverse(),true);
   if(tab==='products') renderAdminProducts();
-  if(tab==='formules'){renderAdminForfaitsEditor();renderAdminOptionsEditor();}
+  if(tab==='formules'){renderAdminPricingMatrix();renderAdminForfaitsEditor();renderAdminOptionsEditor();}
   if(tab==='settings'){renderCitiesAdmin();renderResendStatus();renderAdminZonesEditor();}
   if(tab==='devis'){renderAdminZonesEditor();renderAdminDemandesDevis();}
   if(tab==='clients') renderAdminClients();
@@ -2087,7 +2177,7 @@ function rdvTable(rdvs,admin=false){
       ${admin?`<td style="white-space:nowrap">
         ${r.status==='pending'?`<button class="btn-sm btn-confirm" onclick="updRdv('${r.id}','confirmed')">✓ Confirmer</button>`:''}
         ${r.status==='confirmed'?`<button class="btn-sm btn-edit" onclick="updRdv('${r.id}','done')">✓ Réalisé</button>`:''}
-        ${r.status!=='cancelled'&&r.status!=='done'?`<button class="btn-sm btn-cancel" onclick="updRdv('${r.id}','cancelled')">✗</button>`:''}
+        ${r.status!=='cancelled'&&r.status!=='done'?`<button class="btn-sm btn-cancel" onclick="updRdv('${r.id}','cancelled')">✗</button>`:''} <button class="btn-sm btn-delete" onclick="deleteRdv('${r.id}')">Supprimer</button>
       </td>`:''}
     </tr>`).join('')+'</tbody></table>';
 }
@@ -2105,7 +2195,7 @@ function ordTable(orders,admin=false){
       ${admin?`<td style="white-space:nowrap">
         ${o.status==='pending'?`<button class="btn-sm btn-confirm" onclick="updOrd('${o.id}','confirmed')">Confirmer</button>`:''}
         ${o.status==='confirmed'?`<button class="btn-sm btn-edit" onclick="updOrd('${o.id}','done')">Livré</button>`:''}
-        ${o.status!=='cancelled'&&o.status!=='done'?`<button class="btn-sm btn-cancel" onclick="updOrd('${o.id}','cancelled')">Annuler</button>`:''}
+        ${o.status!=='cancelled'&&o.status!=='done'?`<button class="btn-sm btn-cancel" onclick="updOrd('${o.id}','cancelled')">Annuler</button>`:''} <button class="btn-sm btn-delete" onclick="deleteOrd('${o.id}')">Supprimer</button>
       </td>`:''}
     </tr>`).join('')+'</tbody></table>';
 }
@@ -2131,11 +2221,25 @@ function updRdv(id,status){
   if(at==='overview') renderAdminDash(); else showAdminTab(at);
   showToast('Statut mis à jour','success');
 }
+function deleteRdv(id){
+  if(!confirm('Supprimer cette demande de rendez-vous ?')) return;
+  DB.set('rdv',(DB.get('rdv')||[]).filter(r=>r.id!==id));
+  const at=document.querySelector('.sidebar-link.active')?.id?.replace('sl-','')||'rdv';
+  if(at==='overview') renderAdminDash(); else showAdminTab(at);
+  showToast('Demande supprimée','success');
+}
 function updOrd(id,status){
   const orders=DB.get('orders');const o=orders.find(x=>x.id===id);if(o){o.status=status;DB.set('orders',orders);}
   const at=document.querySelector('.sidebar-link.active')?.id?.replace('sl-','')||'orders';
   if(at==='overview') renderAdminDash(); else showAdminTab(at);
   showToast('Commande mise à jour','success');
+}
+function deleteOrd(id){
+  if(!confirm('Supprimer cette commande ?')) return;
+  DB.set('orders',(DB.get('orders')||[]).filter(o=>o.id!==id));
+  const at=document.querySelector('.sidebar-link.active')?.id?.replace('sl-','')||'orders';
+  if(at==='overview') renderAdminDash(); else showAdminTab(at);
+  showToast('Commande supprimée','success');
 }
 function openProductModal(pid){
   const p=pid?DB.get('products').find(x=>x.id===pid):null;
@@ -2368,13 +2472,18 @@ function updateNotifBadge(){
 function renderAdminNotifs(){
   const notifs=DB.get('notifications');
   notifs.forEach(n=>n.read=true);DB.set('notifications',notifs);updateNotifBadge();
-  document.getElementById('adminNotifsContent').innerHTML=!notifs.length
-    ?'<div class="empty-state"><div class="empty-icon">🔔</div><p>Aucune notification</p></div>'
-    :'<div style="padding:0">'+notifs.map(n=>`
-      <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(0,0,0,0.05)">
-        <span style="font-size:1.2rem">🔔</span>
-        <div><div style="font-size:0.9rem;color:var(--text);font-weight:500">${n.msg}</div><div style="font-size:0.78rem;color:var(--muted);margin-top:3px">${n.date}</div></div>
-      </div>`).join('')+'</div>';
+  const el=document.getElementById('adminNotifsContent');
+  if(!el) return;
+  const pendingRdvs=(DB.get('rdv')||[]).filter(r=>r.status==='pending').slice().reverse();
+  const pendingOrders=(DB.get('orders')||[]).filter(o=>o.status==='pending').slice().reverse();
+  const pendingDevis=(typeof getDemandesDevis==='function'?getDemandesDevis():[]).filter(d=>!d.status||d.status==='pending').slice().reverse();
+  const cards=[];
+  pendingRdvs.forEach(r=>cards.push(`<div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--aqua);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--sky);margin-bottom:6px">Nouvelle demande de rendez-vous</div><div style="font-weight:800;color:var(--deep);font-size:1rem">${r.prenom||''} ${r.nom||''}</div><div style="font-size:.84rem;color:var(--muted);margin-top:4px">${r.forfait||'Forfait non précisé'} · ${r.taille||'Piscine non précisée'} · ${r.adresse||'Ville non précisée'}</div><div style="font-size:.78rem;color:var(--muted);margin-top:4px">${r.email||''} ${r.tel?`· ${r.tel}`:''}</div>${r.totalPrice?`<div style="font-size:.86rem;color:var(--ocean);font-weight:800;margin-top:8px">Tarif estimé : ${Number(r.totalPrice).toFixed(0)} €</div>`:''}</div><div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn-sm btn-confirm" onclick="updRdv('${r.id}','confirmed')">Confirmer</button><button class="btn-sm btn-cancel" onclick="updRdv('${r.id}','cancelled')">Refuser</button><button class="btn-sm btn-delete" onclick="deleteRdv('${r.id}')">Supprimer</button></div></div></div>`));
+  pendingOrders.forEach(o=>cards.push(`<div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--warning);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#b45309;margin-bottom:6px">Nouvelle commande</div><div style="font-weight:800;color:var(--deep);font-size:1rem">${o.userName||'Client'}</div><div style="font-size:.84rem;color:var(--muted);margin-top:4px">${o.productName||'Produit'} · Quantité ${o.qty||1} · ${(Number(o.qty||1)*Number(o.price||0)).toFixed(2)} €</div><div style="font-size:.78rem;color:var(--muted);margin-top:4px">${o.userEmail||''}</div></div><div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn-sm btn-confirm" onclick="updOrd('${o.id}','confirmed')">Confirmer</button><button class="btn-sm btn-cancel" onclick="updOrd('${o.id}','cancelled')">Annuler</button><button class="btn-sm btn-delete" onclick="deleteOrd('${o.id}')">Supprimer</button></div></div></div>`));
+  pendingDevis.forEach(d=>cards.push(`<div style="background:#fff;border:1px solid rgba(0,0,0,.07);border-left:4px solid var(--gold);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:0 6px 18px rgba(10,79,140,.06)"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:.72rem;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Ancienne demande de devis</div><div style="font-weight:800;color:var(--deep);font-size:1rem">${d.prenom||''} ${d.nom||''}</div><div style="font-size:.84rem;color:var(--muted);margin-top:4px">${d.ville||d.city||'Ville non précisée'} · ${d.estimatedPrice||'—'} €</div><div style="font-size:.78rem;color:var(--muted);margin-top:4px">${d.email||''} ${d.phone?`· ${d.phone}`:''}</div></div><div style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn-sm btn-confirm" onclick="updDevis('${d.id}','done')">Traité</button><button class="btn-sm btn-delete" onclick="deleteDevis('${d.id}')">Supprimer</button></div></div></div>`));
+  const activity = notifs.length ? `<div style="margin-top:22px;border-top:1px solid rgba(0,0,0,.06);padding-top:18px"><div style="font-size:.78rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Historique récent</div>${notifs.slice(0,8).map(n=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,0.04)"><span>🔔</span><div><div style="font-size:.86rem;color:var(--text);font-weight:500">${n.msg}</div><div style="font-size:.76rem;color:var(--muted);margin-top:2px">${n.date}</div></div></div>`).join('')}</div>` : '';
+  if(!cards.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>Aucune nouvelle demande à gérer.</p></div>'+activity;return;}
+  el.innerHTML=`<div style="padding:18px 18px 6px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px"><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingRdvs.length}</div><div class="stat-card-label">RDV en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingOrders.length}</div><div class="stat-card-label">Commandes en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingDevis.length}</div><div class="stat-card-label">Anciens devis</div></div></div>${cards.join('')}${activity}</div>`;
 }
 function submitContact(e){
   e.preventDefault();
@@ -2929,29 +3038,44 @@ function savePricingRules(){
 function renderAdminZonesEditor(){ renderAdminPricingEditor(); }
 function saveZonesConfirm(){ savePricingRules(); }
 
+function updDevis(id,status){
+  const all=getDemandesDevis();
+  const d=all.find(x=>String(x.id)===String(id));
+  if(d){d.status=status;DB.setObj('demandesDevis',all);}
+  const at=document.querySelector('.sidebar-link.active')?.id?.replace('sl-','')||'devis';
+  if(at==='notifs') renderAdminNotifs(); else renderAdminDemandesDevis();
+  showToast('Demande mise à jour','success');
+}
+function deleteDevis(id){
+  if(!confirm('Supprimer cette demande de devis ?')) return;
+  DB.setObj('demandesDevis',getDemandesDevis().filter(d=>String(d.id)!==String(id)));
+  const at=document.querySelector('.sidebar-link.active')?.id?.replace('sl-','')||'devis';
+  if(at==='notifs') renderAdminNotifs(); else renderAdminDemandesDevis();
+  showToast('Demande supprimée','success');
+}
 function renderAdminDemandesDevis(){
   const all=getDemandesDevis().slice().reverse();
   const el=document.getElementById('adminDemandesDevisTable');
   if(!el)return;
   const badge=document.getElementById('devis-count-badge');
   if(badge)badge.textContent=all.length+' demande'+(all.length!==1?'s':'');
-  if(!all.length){
-    el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Aucune demande reçue pour l\'instant.</p></div>';
-    return;
-  }
-  el.innerHTML='<div style="overflow-x:auto"><table>'
-    +'<thead><tr><th>Date</th><th>Nom</th><th>Email</th><th>Tél</th><th>Ville</th><th>Zone</th><th>&gt;50m³</th><th>Estimation</th><th>Message</th></tr></thead>'
-    +'<tbody>'+all.map(s=>'<tr>'
-      +'<td>'+new Date(s.date).toLocaleDateString('fr-FR')+'</td>'
-      +'<td>'+(s.prenom||'')+' '+(s.nom||'')+'</td>'
-      +'<td><a href="mailto:'+s.email+'" style="color:var(--sky)">'+s.email+'</a></td>'
+  if(!all.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Aucune ancienne demande de devis.</p></div>';return;}
+  el.innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Nom</th><th>Email</th><th>Tél</th><th>Ville</th><th>Zone</th><th>Estimation</th><th>Statut</th><th>Message</th><th>Actions</th></tr></thead><tbody>'
+    +all.map(s=>{
+      const status=s.status||'pending';
+      const actions=(status!=='done'?`<button class="btn-sm btn-confirm" onclick="updDevis('${s.id}','done')">Traité</button>`:'')+` <button class="btn-sm btn-delete" onclick="deleteDevis('${s.id}')">Supprimer</button>`;
+      return '<tr><td>'+new Date(s.date).toLocaleDateString('fr-FR')+'</td>'
+      +'<td><strong>'+(s.prenom||'')+' '+(s.nom||'')+'</strong></td>'
+      +'<td><a href="mailto:'+(s.email||'')+'" style="color:var(--sky)">'+(s.email||'—')+'</a></td>'
       +'<td>'+(s.phone||'—')+'</td>'
-      +'<td>'+(s.city||'—')+'</td>'
-      +'<td>'+(s.zone||'—')+'</td>'
-      +'<td style="text-align:center">'+(s.largePiscine?'<span style="color:var(--success)">✓</span>':'—')+'</td>'
-      +'<td><strong style="color:var(--ocean)">'+(s.estimatedPrice||'—')+' €</strong></td>'
-      +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.message||'—')+'</td>'
-      +'</tr>').join('')
+      +'<td>'+(s.ville||s.city||'—')+'</td>'
+      +'<td>'+(s.zone?('Zone '+s.zone):'—')+'</td>'
+      +'<td><strong style="color:var(--ocean)">'+(s.estimatedPrice||'—')+' €</strong></td>'
+      +'<td><span class="badge badge-'+(status==='done'?'done':'pending')+'">'+(status==='done'?'Traité':'En attente')+'</span></td>'
+      +'<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.message||'—')+'</td>'
+      +'<td style="white-space:nowrap">'+actions+'</td>'
+      +'</tr>';
+    }).join('')
     +'</tbody></table></div>';
 }
 
