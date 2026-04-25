@@ -2,13 +2,7 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "briblue83.com"
-        }
-      ],
-      "destination": "https://briblue83.com/$1",
+      "destination": "https://www.briblue83.com/$1",
       "permanent": true
     }
   ]
