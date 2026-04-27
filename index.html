@@ -4007,9 +4007,12 @@ function updatePoolCalc(){
      =================================================================== */
   function bbUpdateCitySelectors(){
     const cities = allCities();
-    // Tous les <select> avec attribut id contenant "ville"
+    // Tous les <select> avec attribut id contenant "ville" (mais PAS le sélecteur de zone admin)
     const selects = document.querySelectorAll('select[id*="ville" i], select[id*="city" i]');
+    const excludedIds = ['bb-new-city-zone','bb-new-city-name','bb-public-city-input'];
     selects.forEach(sel => {
+      // Skip le sélecteur de zone et autres champs internes
+      if(excludedIds.includes(sel.id)) return;
       const current = sel.value;
       // Garder la première option (placeholder) si elle existe
       const firstOpt = sel.querySelector('option');
@@ -4023,6 +4026,7 @@ function updatePoolCalc(){
     // Datalists pour autocomplete
     const datalists = document.querySelectorAll('datalist[id*="ville" i], datalist[id*="city" i]');
     datalists.forEach(dl => {
+      if(excludedIds.includes(dl.id)) return;
       dl.innerHTML = cities.map(c => `<option value="${esc(c)}"></option>`).join('');
     });
   }
@@ -4196,5 +4200,214 @@ function updatePoolCalc(){
   } else {
     init();
   }
+})();
+</script>
+
+<!-- ============================================================================
+     BRI'BLUE - PATCH EMAILS (Resend via Vercel /api/send-email)
+     ============================================================================ -->
+<script id="briblue-email-patch">
+(function(){
+  'use strict';
+
+  /* Envoie un email via la fonction serverless /api/send-email
+     Ne plante JAMAIS le site si l'envoi échoue (les emails sont du "best effort") */
+  async function sendMail(template, to, data){
+    if(!to || !template) return;
+    try {
+      const r = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template, to, data: data || {} })
+      });
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok){
+        console.warn('[Mail] Echec', template, '->', to, j);
+      } else {
+        console.log('[Mail] OK', template, '->', to);
+      }
+      return j;
+    } catch(e){
+      console.warn('[Mail] Erreur réseau', e);
+    }
+  }
+  window.briblueSendMail = sendMail; // exposé pour debug
+
+  /* ----------------------------------------------------------------------
+     1) CRÉATION DE COMPTE — on hooke la fonction d'inscription existante
+     ---------------------------------------------------------------------- */
+  function hookSignup(){
+    const orig = window.doSignup;
+    if(typeof orig !== 'function' || orig.__bbHooked) return;
+    window.doSignup = function(e){
+      const result = orig.apply(this, arguments);
+      try {
+        // Récupérer le user qui vient d'être créé
+        const sess = (typeof DB !== 'undefined' && DB.getObj) ? DB.getObj('session') : null;
+        if(sess && sess.email && sess.role !== 'admin'){
+          sendMail('account_created', sess.email, {
+            prenom: sess.prenom || sess.firstname || '',
+            nom: sess.nom || sess.lastname || ''
+          });
+        }
+      } catch(err){ console.warn(err); }
+      return result;
+    };
+    window.doSignup.__bbHooked = true;
+  }
+
+  /* ----------------------------------------------------------------------
+     2) NOUVELLE COMMANDE — on hooke cartCheckout / placeOrder
+     ---------------------------------------------------------------------- */
+  function hookOrders(){
+    // Cherche les fonctions de checkout existantes (selon les noms possibles dans le code)
+    ['cartCheckout','placeOrder','checkout','submitOrder'].forEach(fname => {
+      const orig = window[fname];
+      if(typeof orig !== 'function' || orig.__bbHooked) return;
+      window[fname] = function(){
+        const result = orig.apply(this, arguments);
+        try {
+          // Lire la dernière commande enregistrée
+          const orders = (typeof DB !== 'undefined' && DB.get) ? DB.get('orders') : [];
+          const last = orders && orders.length ? orders[orders.length - 1] : null;
+          if(last){
+            const userEmail = last.userEmail || last.email;
+            const items = last.items || [{ name: last.productName, qty: last.qty, price: last.price }];
+            const total = last.total || (items.reduce((s,it)=>s + Number(it.qty||1)*Number(it.price||0), 0));
+
+            // Email au client
+            if(userEmail){
+              sendMail('order_confirmed', userEmail, {
+                prenom: last.prenom || (last.userName||'').split(' ')[0] || 'Client',
+                nom: last.nom || '',
+                items, total,
+                orderId: last.id
+              });
+            }
+            // Email à l'admin
+            sendMail('admin_new_order', 'briblue83@hotmail.com', {
+              type: 'order',
+              clientName: last.userName || (last.prenom + ' ' + last.nom) || 'Client',
+              clientEmail: userEmail || '',
+              clientPhone: last.phone || last.tel || '',
+              details: items.map(it => `- ${it.name} x${it.qty||1} = ${(Number(it.qty||1)*Number(it.price||0)).toFixed(2)} €`).join('\n') + `\n\nTotal : ${Number(total).toFixed(2)} €`
+            });
+          }
+        } catch(err){ console.warn(err); }
+        return result;
+      };
+      window[fname].__bbHooked = true;
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+     3) NOUVEAU RDV — on hooke submitBooking / la soumission du form
+     ---------------------------------------------------------------------- */
+  function hookBookings(){
+    ['submitBooking','sendBooking','bookingSubmit','reserveBooking'].forEach(fname => {
+      const orig = window[fname];
+      if(typeof orig !== 'function' || orig.__bbHooked) return;
+      window[fname] = function(){
+        const result = orig.apply(this, arguments);
+        try {
+          const rdvs = (typeof DB !== 'undefined' && DB.get) ? DB.get('rdv') : [];
+          const last = rdvs && rdvs.length ? rdvs[rdvs.length - 1] : null;
+          if(last){
+            const userEmail = last.email;
+            // Email de confirmation au client (en attente de validation admin)
+            if(userEmail){
+              sendMail('rdv_confirmed', userEmail, {
+                prenom: last.prenom || 'Client',
+                nom: last.nom || '',
+                forfait: last.forfait || '—',
+                date: last.date || 'À définir',
+                ville: last.adresse || last.ville || '—',
+                totalPrice: last.totalPrice
+              });
+            }
+            // Email à l'admin
+            sendMail('admin_new_order', 'briblue83@hotmail.com', {
+              type: 'rdv',
+              clientName: (last.prenom || '') + ' ' + (last.nom || ''),
+              clientEmail: userEmail || '',
+              clientPhone: last.tel || last.phone || '',
+              details: `Formule : ${last.forfait || '—'}\nDate : ${last.date || '—'}\nVille : ${last.adresse || last.ville || '—'}\nTaille piscine : ${last.taille || '—'}\nTarif estimé : ${last.totalPrice ? Number(last.totalPrice).toFixed(0) + ' €' : '—'}\n\nMessage : ${last.message || '(aucun)'}`
+            });
+          }
+        } catch(err){ console.warn(err); }
+        return result;
+      };
+      window[fname].__bbHooked = true;
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+     4) NOUVEAU DEVIS — on hooke submitDevis
+     ---------------------------------------------------------------------- */
+  function hookDevis(){
+    ['submitDevis','sendDevis','submitDemandeDevis'].forEach(fname => {
+      const orig = window[fname];
+      if(typeof orig !== 'function' || orig.__bbHooked) return;
+      window[fname] = function(){
+        const result = orig.apply(this, arguments);
+        try {
+          const devis = (typeof DB !== 'undefined' && DB.get) ? (DB.get('demandesDevis') || DB.getObj('demandesDevis') || []) : [];
+          const last = Array.isArray(devis) && devis.length ? devis[devis.length - 1] : null;
+          if(last){
+            sendMail('admin_new_order', 'briblue83@hotmail.com', {
+              type: 'devis',
+              clientName: (last.prenom || '') + ' ' + (last.nom || ''),
+              clientEmail: last.email || '',
+              clientPhone: last.phone || last.tel || '',
+              details: `Ville : ${last.ville || last.city || '—'}\nVolume : ${last.volumeM3 || '—'} m³\nPrix estimé : ${last.estimatedPrice ? Number(last.estimatedPrice).toFixed(0) + ' €' : '—'}`
+            });
+          }
+        } catch(err){ console.warn(err); }
+        return result;
+      };
+      window[fname].__bbHooked = true;
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+     5) FONCTION ADMIN — envoyer un rappel manuel
+     Utilisable depuis la console: briblueSendReminder('rdv_id_123')
+     ---------------------------------------------------------------------- */
+  window.briblueSendReminder = async function(rdvId){
+    const rdvs = (typeof DB !== 'undefined' && DB.get) ? DB.get('rdv') : [];
+    const rdv = (rdvs || []).find(r => r && r.id === rdvId);
+    if(!rdv){ console.error('RDV introuvable :', rdvId); return; }
+    if(!rdv.email){ console.error('Pas d\'email pour ce RDV'); return; }
+    return sendMail('rdv_reminder', rdv.email, {
+      prenom: rdv.prenom || 'Client',
+      nom: rdv.nom || '',
+      forfait: rdv.forfait || '—',
+      date: rdv.date || 'À définir',
+      ville: rdv.adresse || rdv.ville || '—'
+    });
+  };
+
+  /* ----------------------------------------------------------------------
+     INITIALISATION — on essaie de hooker plusieurs fois
+     car les fonctions du site sont définies tard
+     ---------------------------------------------------------------------- */
+  function tryHook(){
+    hookSignup();
+    hookOrders();
+    hookBookings();
+    hookDevis();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', tryHook);
+  } else {
+    tryHook();
+  }
+  // Réessayer après quelques secondes pour les fonctions définies tard
+  setTimeout(tryHook, 500);
+  setTimeout(tryHook, 2000);
+  setTimeout(tryHook, 5000);
+
+  console.log('[BriBlue] Patch emails initialisé ✉️');
 })();
 </script>
