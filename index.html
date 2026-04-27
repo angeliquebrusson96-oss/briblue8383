@@ -3652,3 +3652,549 @@ function updatePoolCalc(){
   };
 })();
 </script>
+
+<!-- ============================================================================
+     BRI'BLUE - PATCH SUPABASE (Zones, Villes, Forfaits par zone)
+     -----------------------------------------------------------------
+     À COLLER À LA TOUTE FIN DE VOTRE index.html, JUSTE AVANT </body>
+     (ou après les <script> existants tout en bas)
+     ============================================================================ -->
+
+<!-- 1. Bibliothèque officielle Supabase (chargée depuis le CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2. Patch principal : tout passe par Supabase au lieu du localStorage -->
+<script id="briblue-supabase-patch">
+(function(){
+  'use strict';
+
+  /* ===================================================================
+     1) CONFIGURATION SUPABASE
+     =================================================================== */
+  const SUPABASE_URL = 'https://okruskevqpykqoyvqkqu.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rcnVza2V2cXB5a3FveXZxa3F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODAyODQsImV4cCI6MjA5Mjg1NjI4NH0.Le8ChwTmHAyQOWmNe9qKN_mQC-aCX_-iVEC3wmla9pk';
+
+  if(!window.supabase || !window.supabase.createClient){
+    console.error('[BriBlue] La bibliothèque Supabase ne s\'est pas chargée.');
+    return;
+  }
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.briblueSB = sb; // exposé pour debug
+
+  /* ===================================================================
+     2) CACHE LOCAL (pour ne pas appeler la base à chaque clic)
+     =================================================================== */
+  const cache = {
+    villes: [],          // [{id, nom, zone}]
+    forfaits: [],        // [{id, name, tagline, features, price_lt50_z1, ...}]
+    loaded: false,
+  };
+
+  function cleanCity(v){ return String(v || '').trim().replace(/\s+/g, ' '); }
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function toast(msg, type){
+    if(typeof showToast === 'function') showToast(msg, type || 'info');
+    else console.log('[Toast]', msg);
+  }
+
+  /* ===================================================================
+     3) CHARGEMENT INITIAL DEPUIS SUPABASE
+     =================================================================== */
+  async function loadFromSupabase(){
+    try {
+      const [villesRes, forfaitsRes] = await Promise.all([
+        sb.from('villes').select('*').order('nom'),
+        sb.from('forfaits').select('*').order('display_order'),
+      ]);
+      if(villesRes.error) throw villesRes.error;
+      if(forfaitsRes.error) throw forfaitsRes.error;
+      cache.villes = villesRes.data || [];
+      cache.forfaits = forfaitsRes.data || [];
+      cache.loaded = true;
+      console.log('[BriBlue] Supabase chargé :', cache.villes.length, 'villes,', cache.forfaits.length, 'forfaits');
+      return true;
+    } catch(e) {
+      console.error('[BriBlue] Erreur chargement Supabase :', e);
+      toast('⚠️ Connexion Supabase impossible', 'error');
+      return false;
+    }
+  }
+
+  /* ===================================================================
+     4) HELPERS — accès aux données via le cache
+     =================================================================== */
+
+  // Renvoie les villes d'une zone donnée
+  function citiesInZone(zoneNum){
+    return cache.villes
+      .filter(v => v.zone === Number(zoneNum))
+      .map(v => v.nom);
+  }
+
+  // Renvoie le numéro de zone d'une ville (1, 2 ou 3) ou null
+  function zoneOfCity(name){
+    const n = cleanCity(name).toLowerCase();
+    if(!n) return null;
+    const v = cache.villes.find(x => cleanCity(x.nom).toLowerCase() === n);
+    return v ? v.zone : null;
+  }
+
+  // Liste de toutes les villes (toutes zones confondues)
+  function allCities(){
+    return cache.villes.map(v => v.nom).sort((a,b) => a.localeCompare(b, 'fr'));
+  }
+
+  /* ===================================================================
+     5) OVERRIDE DES FONCTIONS GLOBALES UTILISÉES PAR LE SITE
+     =================================================================== */
+
+  // L'ancien code attendait getZones() avec structure {zone1:{cities:[]}, zone2:{}, zone3:{}}
+  window.getZones = function(){
+    return {
+      zone1: { surcharge: 0, cities: citiesInZone(1) },
+      zone2: { surcharge: 0, cities: citiesInZone(2) },
+      zone3: { surcharge: 0, cities: citiesInZone(3) },
+    };
+  };
+
+  window.getZoneByCity = function(name){
+    const z = zoneOfCity(name);
+    if(!z) return null;
+    return { number: z, surcharge: 0, cities: citiesInZone(z) };
+  };
+
+  window.getCities = function(){ return allCities(); };
+  window.getBookingCityOptions = function(){ return allCities(); };
+
+  // Récupère les forfaits depuis Supabase (remplace l'ancien getForfaits)
+  window.getForfaits = function(){
+    return cache.forfaits.map(f => ({
+      id: f.id,
+      name: f.name,
+      tagline: f.tagline || '',
+      features: Array.isArray(f.features) ? f.features : (f.features ? JSON.parse(f.features) : []),
+      // Compat ancien code : on retourne le prix Zone 2 par défaut comme "prix de référence"
+      prices: [
+        { label: '-50 m²', value: Number(f.price_lt50_z2 || 0) },
+        { label: '+50 m²', value: Number(f.price_gt50_z2 || 0) },
+      ],
+      // Nouveaux champs : prix par zone
+      pricesByZone: {
+        1: { lt50: Number(f.price_lt50_z1||0), gt50: Number(f.price_gt50_z1||0) },
+        2: { lt50: Number(f.price_lt50_z2||0), gt50: Number(f.price_gt50_z2||0) },
+        3: { lt50: Number(f.price_lt50_z3||0), gt50: Number(f.price_gt50_z3||0) },
+      },
+      color: f.color || 'linear-gradient(135deg,#1a4a7c,#1a8fd1)',
+      featured: !!f.featured,
+    }));
+  };
+
+  // Calcule le prix d'un forfait selon la zone et la taille
+  window.getForfaitPriceForZone = function(forfaitId, zoneNum, poolSize){
+    const f = cache.forfaits.find(x => Number(x.id) === Number(forfaitId));
+    if(!f) return null;
+    const z = Number(zoneNum) || 2;
+    const isLt50 = (poolSize === 'lt50' || poolSize === '-50 m²' || poolSize === '-50m²');
+    const key = isLt50 ? `price_lt50_z${z}` : `price_gt50_z${z}`;
+    return Number(f[key] || 0);
+  };
+
+  /* ===================================================================
+     6) NOUVELLE INTERFACE ADMIN — TABLEAU 3 COLONNES
+     =================================================================== */
+
+  function renderAdminZonesTable(){
+    const panel = document.getElementById('admin-tab-zones');
+    if(!panel) return;
+
+    const z1 = citiesInZone(1);
+    const z2 = citiesInZone(2);
+    const z3 = citiesInZone(3);
+
+    panel.innerHTML = `
+      <div class="dash-header">
+        <h1>🗺️ Zones géographiques</h1>
+        <p>Tapez vos villes dans la bonne zone (1 = proche, 3 = loin). Tout est sauvegardé automatiquement dans la base.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Tableau des villes par zone</h2>
+          <span style="font-size:0.82rem;color:var(--muted)">${cache.villes.length} ville(s) au total</span>
+        </div>
+        <div class="card-body">
+
+          <!-- Zone d'ajout rapide -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;align-items:flex-end">
+            <div style="flex:1;min-width:220px">
+              <label style="font-size:0.85rem;font-weight:600;color:var(--deep);display:block;margin-bottom:6px">Nom de la ville</label>
+              <input type="text" id="bb-new-city-name" placeholder="Ex : Hyères"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();bbAddVilleClick();}"
+                style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif">
+            </div>
+            <div>
+              <label style="font-size:0.85rem;font-weight:600;color:var(--deep);display:block;margin-bottom:6px">Zone</label>
+              <select id="bb-new-city-zone"
+                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;background:white">
+                <option value="1">Zone 1 (proche)</option>
+                <option value="2" selected>Zone 2 (intermédiaire)</option>
+                <option value="3">Zone 3 (loin)</option>
+              </select>
+            </div>
+            <button class="btn-add" onclick="bbAddVilleClick()"
+              style="background:linear-gradient(135deg,var(--ocean),var(--sky));color:white;padding:11px 22px;border:none;border-radius:10px;font-weight:700;cursor:pointer">
+              + Ajouter
+            </button>
+          </div>
+
+          <!-- Le tableau 3 colonnes -->
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;background:white">
+              <thead>
+                <tr>
+                  <th style="background:linear-gradient(135deg,#0d4953,#1a7480);color:white;padding:14px 12px;text-align:left;font-size:0.95rem;border-radius:10px 0 0 0">
+                    Zone 1 <span style="font-weight:400;opacity:0.85">(${z1.length})</span>
+                  </th>
+                  <th style="background:linear-gradient(135deg,#1ca086,#22c0a4);color:white;padding:14px 12px;text-align:left;font-size:0.95rem">
+                    Zone 2 <span style="font-weight:400;opacity:0.85">(${z2.length})</span>
+                  </th>
+                  <th style="background:linear-gradient(135deg,#e57b50,#f29670);color:white;padding:14px 12px;text-align:left;font-size:0.95rem;border-radius:0 10px 0 0">
+                    Zone 3 <span style="font-weight:400;opacity:0.85">(${z3.length})</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="vertical-align:top">
+                  <td style="padding:12px;border:1px solid #e2e8f0;background:#f8fffe;min-width:200px">
+                    ${renderCityList(z1, 1)}
+                  </td>
+                  <td style="padding:12px;border:1px solid #e2e8f0;background:#f8fffe;min-width:200px">
+                    ${renderCityList(z2, 2)}
+                  </td>
+                  <td style="padding:12px;border:1px solid #e2e8f0;background:#fff8f5;min-width:200px">
+                    ${renderCityList(z3, 3)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top:18px;font-size:0.82rem;color:var(--muted);font-style:italic">
+            💡 Astuce : pour déplacer une ville d'une zone à une autre, supprimez-la puis rajoutez-la dans la nouvelle zone.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCityList(cities, zoneNum){
+    if(!cities.length){
+      return '<p style="color:var(--muted);font-size:0.85rem;font-style:italic;padding:8px">Aucune ville</p>';
+    }
+    return cities.map(c => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:white;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px">
+        <span style="font-size:0.9rem;color:var(--deep);font-weight:500">${esc(c)}</span>
+        <button onclick="bbRemoveVille(${zoneNum}, '${esc(c).replace(/'/g,"\\'")}')"
+          title="Supprimer"
+          style="background:#fee2e2;border:none;color:#c0392b;padding:4px 9px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-weight:600">
+          🗑️
+        </button>
+      </div>
+    `).join('');
+  }
+
+  // Ajout d'une ville depuis le formulaire admin
+  window.bbAddVilleClick = async function(){
+    const inputName = document.getElementById('bb-new-city-name');
+    const inputZone = document.getElementById('bb-new-city-zone');
+    if(!inputName || !inputZone) return;
+    const name = cleanCity(inputName.value);
+    const zone = Number(inputZone.value);
+    if(!name){ inputName.focus(); return; }
+    if(![1,2,3].includes(zone)){ toast('Zone invalide','error'); return; }
+
+    // Si la ville existe déjà, on la met à jour (changement de zone)
+    const existing = cache.villes.find(v => cleanCity(v.nom).toLowerCase() === name.toLowerCase());
+
+    try {
+      if(existing){
+        if(existing.zone === zone){
+          toast(`${name} est déjà en Zone ${zone}`, 'warning');
+          return;
+        }
+        const { error } = await sb.from('villes').update({ zone }).eq('id', existing.id);
+        if(error) throw error;
+        existing.zone = zone;
+        toast(`✅ ${name} déplacée en Zone ${zone}`, 'success');
+      } else {
+        const { data, error } = await sb.from('villes').insert([{ nom: name, zone }]).select().single();
+        if(error) throw error;
+        cache.villes.push(data);
+        toast(`✅ ${name} ajoutée en Zone ${zone}`, 'success');
+      }
+      inputName.value = '';
+      inputName.focus();
+      renderAdminZonesTable();
+      // Rafraîchir le reste du site
+      if(typeof renderHeroCities === 'function') try{ renderHeroCities(); }catch(e){}
+      if(typeof renderBookingSection === 'function') try{ renderBookingSection(); }catch(e){}
+      bbUpdateCitySelectors();
+    } catch(e){
+      console.error(e);
+      toast('Erreur : ' + (e.message || e), 'error');
+    }
+  };
+
+  // Suppression d'une ville
+  window.bbRemoveVille = async function(zoneNum, cityName){
+    const name = cleanCity(cityName);
+    if(!confirm(`Supprimer "${name}" de la Zone ${zoneNum} ?`)) return;
+    const v = cache.villes.find(x => cleanCity(x.nom).toLowerCase() === name.toLowerCase());
+    if(!v){ toast('Ville introuvable','error'); return; }
+    try {
+      const { error } = await sb.from('villes').delete().eq('id', v.id);
+      if(error) throw error;
+      cache.villes = cache.villes.filter(x => x.id !== v.id);
+      toast(`Ville "${name}" supprimée`, 'info');
+      renderAdminZonesTable();
+      if(typeof renderHeroCities === 'function') try{ renderHeroCities(); }catch(e){}
+      if(typeof renderBookingSection === 'function') try{ renderBookingSection(); }catch(e){}
+      bbUpdateCitySelectors();
+    } catch(e){
+      console.error(e);
+      toast('Erreur : ' + (e.message || e), 'error');
+    }
+  };
+
+  // Compatibilité avec l'ancien code (boutons "+ Ajouter une ville" sur l'ancienne UI)
+  window.addCityToZone = function(zoneNum){
+    // Redirige vers la nouvelle interface : on remplit le formulaire et on déclenche
+    const inputName = document.getElementById('bb-new-city-name');
+    const inputZone = document.getElementById('bb-new-city-zone');
+    if(inputName && inputZone){
+      inputZone.value = String(zoneNum);
+      inputName.focus();
+    } else {
+      // Sinon ancienne UI : on tente d'ajouter via prompt
+      const name = prompt(`Nom de la ville à ajouter en Zone ${zoneNum} :`);
+      if(name){
+        // Réutilise la logique
+        const old = document.createElement('input'); old.id = 'bb-new-city-name'; old.value = name;
+        const oldZ = document.createElement('select'); oldZ.id = 'bb-new-city-zone';
+        const opt = document.createElement('option'); opt.value = String(zoneNum); opt.selected = true;
+        oldZ.appendChild(opt);
+        document.body.appendChild(old); document.body.appendChild(oldZ);
+        bbAddVilleClick().finally(() => { old.remove(); oldZ.remove(); });
+      }
+    }
+  };
+  window.removeCityFromZone = function(zoneNum, idx){
+    const cities = citiesInZone(zoneNum);
+    if(cities[idx]) bbRemoveVille(zoneNum, cities[idx]);
+  };
+  window.updateCityInZone = function(){ renderAdminZonesTable(); };
+  window.saveZonesAndMajorations = function(){
+    toast('✅ Zones synchronisées avec la base Supabase', 'success');
+  };
+  window.renderZonesAdmin = renderAdminZonesTable;
+
+  /* ===================================================================
+     7) MISE À JOUR DES SÉLECTEURS DE VILLE (formulaires client)
+     =================================================================== */
+  function bbUpdateCitySelectors(){
+    const cities = allCities();
+    // Tous les <select> avec attribut id contenant "ville"
+    const selects = document.querySelectorAll('select[id*="ville" i], select[id*="city" i]');
+    selects.forEach(sel => {
+      const current = sel.value;
+      // Garder la première option (placeholder) si elle existe
+      const firstOpt = sel.querySelector('option');
+      const placeholder = (firstOpt && (firstOpt.value === '' || firstOpt.disabled)) ? firstOpt.outerHTML : '';
+      sel.innerHTML = placeholder + cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+        '<option value="Autre">Autre</option>';
+      // Restaurer la sélection si possible
+      if([...sel.options].some(o => o.value === current)) sel.value = current;
+    });
+
+    // Datalists pour autocomplete
+    const datalists = document.querySelectorAll('datalist[id*="ville" i], datalist[id*="city" i]');
+    datalists.forEach(dl => {
+      dl.innerHTML = cities.map(c => `<option value="${esc(c)}"></option>`).join('');
+    });
+  }
+
+  /* ===================================================================
+     8) GRILLE PUBLIQUE DES 4 FORFAITS AVEC PRIX SELON ZONE
+     =================================================================== */
+
+  // Insère la grille dans un container (ou en crée un)
+  window.bbRenderForfaitsForCity = function(cityName, container){
+    if(!container){
+      container = document.getElementById('bb-forfaits-grid');
+    }
+    if(!container) return;
+
+    const zone = zoneOfCity(cityName);
+    if(!zone){
+      container.innerHTML = `
+        <div style="padding:24px;background:#fef3c7;border:1px solid #fbbf24;border-radius:12px;color:#78350f;text-align:center">
+          <strong>📍 Ville non desservie</strong><br>
+          <span style="font-size:0.9rem">Désolé, ${esc(cityName)} n'est pas dans nos zones d'intervention. Contactez-nous pour étudier votre demande.</span>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="text-align:center;margin-bottom:20px;padding:14px 18px;background:linear-gradient(135deg,#e0f7fa,#f0fdfa);border-radius:12px;border:1px solid #99f6e4">
+        <strong style="color:var(--deep);font-size:1.05rem">📍 ${esc(cityName)}</strong>
+        <span style="margin-left:10px;display:inline-block;padding:4px 12px;background:var(--ocean);color:white;border-radius:20px;font-size:0.82rem;font-weight:700">Zone ${zone}</span>
+        <p style="margin-top:8px;font-size:0.88rem;color:var(--muted)">Voici nos formules d'entretien aux tarifs valables pour votre zone</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px">
+        ${cache.forfaits.map(f => bbRenderForfaitCard(f, zone)).join('')}
+      </div>
+
+      <p style="margin-top:18px;font-size:0.78rem;color:var(--muted);text-align:center;font-style:italic">
+        * Les formules n'incluent pas le bâchage/débâchage et les produits.
+        * Pour les piscines de plus de 50 m³, +20% du tarif de la formule.
+      </p>
+    `;
+  };
+
+  function bbRenderForfaitCard(forfait, zone){
+    const lt50 = Number(forfait['price_lt50_z'+zone] || 0);
+    const gt50 = Number(forfait['price_gt50_z'+zone] || 0);
+    const features = Array.isArray(forfait.features) ? forfait.features : (forfait.features ? JSON.parse(forfait.features) : []);
+    const featuredBadge = forfait.featured ? `<div style="position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:white;padding:4px 12px;border-radius:14px;font-size:0.72rem;font-weight:800;letter-spacing:1px">★ POPULAIRE</div>` : '';
+
+    return `
+      <div style="position:relative;background:white;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(10,79,140,.08);border:${forfait.featured ? '2px solid #fbbf24' : '1px solid #e2e8f0'};display:flex;flex-direction:column">
+        ${featuredBadge}
+        <div style="background:${forfait.color || 'linear-gradient(135deg,#1a4a7c,#1a8fd1)'};color:white;padding:18px 16px;text-align:center">
+          <div style="font-size:1.1rem;font-weight:800;letter-spacing:1px">${esc(forfait.name)}</div>
+          <div style="font-size:0.82rem;opacity:0.9;margin-top:4px">${esc(forfait.tagline || '')}</div>
+        </div>
+        <div style="padding:16px;flex:1;display:flex;flex-direction:column">
+          <ul style="list-style:none;padding:0;margin:0 0 14px 0;font-size:0.86rem;color:var(--text)">
+            ${features.map(feat => `<li style="padding:5px 0;display:flex;gap:8px"><span style="color:var(--aqua)">✓</span><span>${esc(feat)}</span></li>`).join('')}
+          </ul>
+          <div style="margin-top:auto;padding-top:12px;border-top:1px solid #e2e8f0">
+            <div style="display:flex;justify-content:space-between;font-size:0.86rem;margin-bottom:6px">
+              <span style="color:var(--muted)">Piscine -50 m³</span>
+              <strong style="color:var(--deep)">${lt50.toFixed(0)} €</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.86rem">
+              <span style="color:var(--muted)">Piscine +50 m³</span>
+              <strong style="color:var(--deep)">${gt50.toFixed(0)} €</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ===================================================================
+     9) FORMULAIRE PUBLIC : "Tapez votre ville et voyez vos tarifs"
+     =================================================================== */
+
+  // Crée la section publique "Vérifier ma ville" si elle n'existe pas déjà
+  window.bbInjectPublicVilleChecker = function(targetSelector){
+    const target = document.querySelector(targetSelector || '#bb-ville-checker-zone');
+    if(!target) return; // Si l'élément n'existe pas, on ne fait rien
+    if(target.dataset.bbInjected === '1') return; // déjà injecté
+    target.dataset.bbInjected = '1';
+
+    target.innerHTML = `
+      <div style="max-width:900px;margin:40px auto;padding:28px 22px;background:white;border-radius:18px;box-shadow:0 12px 32px rgba(10,79,140,.08)">
+        <h2 style="text-align:center;color:var(--deep);font-size:1.6rem;margin-bottom:8px">💧 Trouvez vos tarifs</h2>
+        <p style="text-align:center;color:var(--muted);font-size:0.95rem;margin-bottom:22px">
+          Tapez le nom de votre ville pour voir nos formules à votre tarif.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:520px;margin:0 auto 22px">
+          <input type="text" id="bb-public-city-input" list="bb-public-city-list"
+            placeholder="Ex : Hyères, Bormes-les-Mimosas..."
+            onkeydown="if(event.key==='Enter'){event.preventDefault();bbCheckPublicCity();}"
+            style="flex:1;min-width:240px;padding:13px 18px;border:1.5px solid #cbd5e1;border-radius:12px;font-size:1rem;font-family:'DM Sans',sans-serif">
+          <datalist id="bb-public-city-list"></datalist>
+          <button onclick="bbCheckPublicCity()"
+            style="padding:13px 28px;background:linear-gradient(135deg,var(--ocean),var(--sky));color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">
+            Voir mes tarifs →
+          </button>
+        </div>
+        <div id="bb-forfaits-grid"></div>
+      </div>
+    `;
+
+    // Remplir le datalist
+    const dl = document.getElementById('bb-public-city-list');
+    if(dl) dl.innerHTML = allCities().map(c => `<option value="${esc(c)}"></option>`).join('');
+  };
+
+  window.bbCheckPublicCity = function(){
+    const inp = document.getElementById('bb-public-city-input');
+    if(!inp) return;
+    const city = cleanCity(inp.value);
+    if(!city){ inp.focus(); return; }
+    bbRenderForfaitsForCity(city, document.getElementById('bb-forfaits-grid'));
+  };
+
+  /* ===================================================================
+     10) PATCH DE showAdminTab POUR L'ONGLET ZONES
+     =================================================================== */
+  const _oldShowAdminTab = window.showAdminTab;
+  window.showAdminTab = function(tab){
+    if(tab === 'zones'){
+      // Afficher uniquement le panneau zones
+      const tabs = ['overview','rdv','orders','products','formules','settings','devis','zones','clients','notifs','compte'];
+      tabs.forEach(t => {
+        const p = document.getElementById('admin-tab-'+t);
+        if(p) p.classList.toggle('hidden', t !== 'zones');
+        const l = document.getElementById('sl-'+t);
+        if(l) l.classList.toggle('active', t === 'zones');
+      });
+      renderAdminZonesTable();
+      return;
+    }
+    if(typeof _oldShowAdminTab === 'function') return _oldShowAdminTab(tab);
+  };
+
+  /* ===================================================================
+     11) DÉMARRAGE
+     =================================================================== */
+  async function init(){
+    const ok = await loadFromSupabase();
+    if(!ok) return;
+
+    // Si on est déjà sur l'onglet zones, on rafraîchit
+    const zonesPanel = document.getElementById('admin-tab-zones');
+    if(zonesPanel && !zonesPanel.classList.contains('hidden')){
+      renderAdminZonesTable();
+    }
+
+    // Mettre à jour les sélecteurs de ville dans tout le site
+    bbUpdateCitySelectors();
+
+    // Injecter le checker public si la zone existe dans la page d'accueil
+    bbInjectPublicVilleChecker('#bb-ville-checker-zone');
+
+    // Re-render des sections qui dépendent des villes
+    if(typeof renderHeroCities === 'function') try{ renderHeroCities(); }catch(e){}
+    if(typeof renderBookingSection === 'function') try{ renderBookingSection(); }catch(e){}
+    if(typeof renderAdminPricingMatrix === 'function') try{ renderAdminPricingMatrix(); }catch(e){}
+
+    console.log('[BriBlue] Patch Supabase initialisé ✅');
+  }
+
+  // Démarrer après chargement complet
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
