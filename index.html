@@ -2523,23 +2523,47 @@ function renderAdminNotifs(){
   if(!cards.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>Aucune nouvelle demande à gérer.</p></div>'+activity;return;}
   el.innerHTML=`<div style="padding:18px 18px 6px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px"><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingRdvs.length}</div><div class="stat-card-label">RDV en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingOrders.length}</div><div class="stat-card-label">Commandes en attente</div></div><div class="stat-card" style="margin:0"><div class="stat-card-value">${pendingDevis.length}</div><div class="stat-card-label">Anciens devis</div></div></div>${cards.join('')}${activity}</div>`;
 }
-function submitContact(e){
-  e.preventDefault();
-  const form=e.target;
-  const inputs=form.querySelectorAll('input');
-  const prenom=inputs[0]?.value||'';
-  const nom=inputs[1]?.value||'';
-  const email=form.querySelector('input[type="email"]')?.value||'';
-  const message=form.querySelector('textarea')?.value||'';
-  const body=`<p style="color:#1a2742;font-size:0.95rem;line-height:1.7;margin-bottom:22px">
-    <strong>${prenom} ${nom}</strong> vous a envoyé un message depuis le formulaire de contact.</p>
-    <div style="background:#f8fafc;border-radius:12px;padding:20px 24px;border-left:4px solid #00b4d8">
-      ${infoRow('📧 Email',email)}
-      ${infoRow('💬 Message',message.replace(/\n/g,'<br>'))}
-    </div>`;
-  sendEmailViaResend(NOTIF_EMAIL, `💬 Message de ${prenom} ${nom} — Contact Bri'Blue`, emailWrap('Message de contact', '#0a4f8c', body));
-  form.reset();
-  showToast('Message envoyé ! Réponse sous 24h.','success');
+async function submitContact(e){
+  if(e) e.preventDefault();
+  const form = document.getElementById('contact-form');
+  if(!form) return;
+  const name = form.querySelector('[name="name"]')?.value || '';
+  const email = form.querySelector('[name="email"]')?.value || '';
+  const message = form.querySelector('[name="message"]')?.value || '';
+  
+  if(!name || !email || !message){
+    alert('Veuillez remplir tous les champs');
+    return;
+  }
+  
+  // Envoyer via la fonction serverless
+  try {
+    const r = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        template: 'admin_new_order',
+        to: 'briblue83@hotmail.com',
+        data: {
+          type: 'contact',
+          clientName: name,
+          clientEmail: email,
+          clientPhone: '',
+          details: message
+        }
+      })
+    });
+    const result = await r.json();
+    if(result.ok){
+      alert('✅ Message envoyé ! Nous vous répondrons rapidement.');
+      form.reset();
+    } else {
+      alert('⚠️ Erreur lors de l\'envoi. Réessayez ou appelez le 06 67 18 61 15.');
+    }
+  } catch(err){
+    console.error(err);
+    alert('⚠️ Erreur réseau. Réessayez ou appelez le 06 67 18 61 15.');
+  }
 }
 function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -4217,18 +4241,22 @@ function updatePoolCalc(){
     if(typeof orig !== 'function' || orig.__bbHooked) return;
     window.doSignup = function(e){
       const result = orig.apply(this, arguments);
-      try {
-        const sess = (typeof DB !== 'undefined' && DB.getObj) ? DB.getObj('session') : null;
-        if(sess && sess.email && sess.role !== 'admin'){
-          sendMail('account_created', sess.email, {
-            prenom: sess.prenom || sess.firstname || '',
-            nom: sess.nom || sess.lastname || ''
-          });
-        }
-      } catch(err){ console.warn(err); }
+      // Lire les données du formulaire d'inscription
+      setTimeout(() => {
+        try {
+          const sess = (typeof DB !== 'undefined' && DB.getObj) ? DB.getObj('session') : null;
+          if(sess && sess.email && sess.role !== 'admin'){
+            const prenom = sess.prenom || sess.firstname || sess.name || '';
+            const nom = sess.nom || sess.lastname || '';
+            console.log('[Email signup] Envoi à', sess.email, 'pour', prenom, nom);
+            sendMail('account_created', sess.email, { prenom, nom });
+          }
+        } catch(err){ console.warn('[Email signup] Erreur:', err); }
+      }, 300); // Petit délai pour que la session soit bien créée
       return result;
     };
     window.doSignup.__bbHooked = true;
+  }
   }
 
   /* Commandes */
