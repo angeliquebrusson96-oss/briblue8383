@@ -571,6 +571,152 @@ font-weight:600;
     padding: 26px 18px;
   }
 }
+
+
+/* ===== GALERIE TRAVAUX (mise à jour) ===== */
+.bb-gallery-img-wrapper {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f1f5f9;
+}
+.bb-gallery-img {
+  width: 100%;
+  height: 280px;
+  object-fit: contain;
+  display: block;
+  background: white;
+  transition: transform 0.3s;
+}
+.bb-gallery-card:hover .bb-gallery-img {
+  transform: scale(1.05);
+}
+.bb-gallery-zoom {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(10, 79, 140, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.bb-gallery-card:hover .bb-gallery-zoom {
+  opacity: 1;
+}
+
+/* ===== LIGHTBOX ===== */
+.bb-lightbox {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 40px;
+}
+.bb-lightbox.bb-lightbox-active {
+  display: flex;
+}
+.bb-lightbox-content {
+  max-width: 95%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.bb-lightbox-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.bb-lightbox-caption {
+  background: rgba(255,255,255,0.97);
+  padding: 16px 24px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 700px;
+}
+.bb-lightbox-caption h3 {
+  color: #0a4f8c;
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+.bb-lightbox-caption p {
+  color: #475569;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.bb-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: #0a4f8c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 100000;
+  line-height: 1;
+}
+.bb-lightbox-close:hover {
+  background: #f0f9ff;
+  transform: scale(1.05);
+}
+.bb-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(255,255,255,0.95);
+  border: none;
+  border-radius: 50%;
+  font-size: 2rem;
+  color: #0a4f8c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  line-height: 1;
+}
+.bb-lightbox-nav:hover {
+  background: white;
+}
+.bb-lightbox-prev {
+  left: 20px;
+}
+.bb-lightbox-next {
+  right: 20px;
+}
+@media (max-width: 768px) {
+  .bb-lightbox-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 1.6rem;
+  }
+  .bb-lightbox-prev { left: 10px; }
+  .bb-lightbox-next { right: 10px; }
+  .bb-gallery-img { height: 220px; }
+}
 </style>
 </head>
 <body>
@@ -611,7 +757,7 @@ font-weight:600;
       <button class="hero-dot" onclick="goSlide(2)"></button>
     </div>
     <div class="hero-content">
-      <span class="hero-badge">Spécialiste entretien piscines</span>
+      <span class="hero-badge">Spécialiste piscines</span>
       <h1 class="hero-title">Votre piscine mérite<br>le <em>meilleur</em></h1>
       <p class="hero-subtitle">Bri'Blue accompagne les propriétaires de piscines dans l'entretien, la maintenance et la gestion saisonnière. Basé à <strong style="color:var(--aqua)">Hyères</strong> et ses environs.</p>
       <div class="hero-btns">
@@ -1208,56 +1354,15 @@ font-weight:600;
         </div>
       </div>
       <div id="admin-tab-zones" class="hidden">
-        <div class="dash-header"><h1>🗺️ Zones géographiques & Majorations</h1><p>Gérez les zones de couverture et les majorations par zone</p></div>
-        <div class="card">
-          <div class="card-header"><h2>Zone 1 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(1)">+ Ajouter une ville</button></div>
-          <div class="card-body">
-            <div style="margin-bottom:16px">
-              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 1 (€)</label>
-              <input type="number" id="zone1-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-              <input id="zone1-new-city" type="text" placeholder="Ajouter une ville en Zone 1…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(1);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
-              <button class="btn-add" onclick="addCityToZone(1)">+ Ajouter</button>
-            </div>
-            <div id="zone1-cities" style="display:grid;gap:10px"></div>
-          </div>
+        <div class="dash-header">
+          <h1>🗺️ Zones géographiques</h1>
+          <p>Chargement du tableau de gestion des villes par zone...</p>
         </div>
-        <div class="card" style="margin-top:22px">
-          <div class="card-header"><h2>Zone 2 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(2)">+ Ajouter une ville</button></div>
-          <div class="card-body">
-            <div style="margin-bottom:16px">
-              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 2 (€)</label>
-              <input type="number" id="zone2-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-              <input id="zone2-new-city" type="text" placeholder="Ajouter une ville en Zone 2…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(2);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
-              <button class="btn-add" onclick="addCityToZone(2)">+ Ajouter</button>
-            </div>
-            <div id="zone2-cities" style="display:grid;gap:10px"></div>
-          </div>
+        <div id="admin-zones-loading" style="text-align:center;padding:60px 20px;color:#94a3b8">
+          <div style="font-size:2rem;margin-bottom:12px">⏳</div>
+          <p>Chargement des données depuis Supabase...</p>
+          <p style="font-size:0.85rem;margin-top:20px">Si le tableau ne s'affiche pas après 5 secondes, rechargez la page (Ctrl+Shift+R)</p>
         </div>
-        <div class="card" style="margin-top:22px">
-          <div class="card-header"><h2>Zone 3 - Villes & Majoration</h2><button class="btn-add" onclick="addCityToZone(3)">+ Ajouter une ville</button></div>
-          <div class="card-body">
-            <div style="margin-bottom:16px">
-              <label style="font-size:0.88rem;color:var(--deep);font-weight:600;display:block;margin-bottom:8px">Majoration Zone 3 (€)</label>
-              <input type="number" id="zone3-surcharge" min="0" step="5" placeholder="0" style="max-width:150px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif">
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-              <input id="zone3-new-city" type="text" placeholder="Ajouter une ville en Zone 3…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCityToZone(3);}" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;font-family:'DM Sans',sans-serif;flex:1;min-width:220px">
-              <button class="btn-add" onclick="addCityToZone(3)">+ Ajouter</button>
-            </div>
-            <div id="zone3-cities" style="display:grid;gap:10px"></div>
-          </div>
-        </div>
-        <div style="margin-top:28px;text-align:right">
-          <button class="btn-add" onclick="saveZonesAndMajorations()" style="background:linear-gradient(135deg,var(--ocean),var(--sky));color:white;padding:12px 28px"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Sauvegarder toutes les zones</button>
-        </div>
-      </div>
-      <div id="admin-tab-clients" class="hidden">
-        <div class="dash-header"><h1>Clients</h1><p>Base de données clients</p></div>
-        <div class="card"><div class="card-header"><h2>Liste</h2></div><div id="adminClientsTable"></div></div>
       </div>
       <div id="admin-tab-notifs" class="hidden">
         <div class="dash-header"><h1><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifications</h1><p>Nouvelles demandes reçues</p></div>
@@ -4151,6 +4256,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'ph-equilibre',
     icon: '⚖️',
+    image: 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80&auto=format',
     tag: 'Bases',
     title: 'Comprendre et maintenir le pH de sa piscine',
     excerpt: 'Le pH est le facteur le plus important pour la qualité de l\'eau. Découvrez comment le mesurer et le corriger facilement.',
@@ -4180,6 +4286,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'eau-verte',
     icon: '🌿',
+    image: 'https://images.unsplash.com/photo-1595437193398-f24279553f4f?w=600&q=80&auto=format',
     tag: 'Dépannage',
     title: 'Eau verte : que faire et comment l\'éviter ?',
     excerpt: 'Votre piscine est devenue verte du jour au lendemain ? Voici la marche à suivre pour récupérer une eau cristalline rapidement.',
@@ -4214,6 +4321,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'filtration',
     icon: '⚙️',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80&auto=format',
     tag: 'Équipement',
     title: 'Bien régler la filtration de sa piscine',
     excerpt: 'La filtration est le poumon de votre piscine. Apprenez à la régler correctement pour une eau toujours claire.',
@@ -4248,6 +4356,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'hivernage',
     icon: '❄️',
+    image: 'https://images.unsplash.com/photo-1551798507-629020c81463?w=600&q=80&auto=format',
     tag: 'Saison',
     title: 'Comment hiverner correctement sa piscine ?',
     excerpt: 'Préparer sa piscine pour l\'hiver est essentiel pour la protéger du gel et faciliter la remise en route au printemps.',
@@ -4285,6 +4394,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'produits',
     icon: '🧪',
+    image: 'https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&q=80&auto=format',
     tag: 'Traitement',
     title: 'Les produits indispensables pour votre piscine',
     excerpt: 'Chlore, pH, floculant, algicide : on vous explique à quoi sert chaque produit et comment bien les utiliser.',
@@ -4321,6 +4431,7 @@ const ARTICLES_DEFAULT = [
   {
     id: 'economies',
     icon: '💰',
+    image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80&auto=format',
     tag: 'Astuces',
     title: '7 astuces pour économiser sur l\'entretien de sa piscine',
     excerpt: 'Une piscine bien gérée coûte moins cher. Découvrez nos astuces pour réduire votre budget entretien sans compromis sur la qualité.',
@@ -4364,7 +4475,7 @@ const FAQ_DEFAULT = [
   },
   {
     question: 'Les produits sont-ils inclus ?',
-    answer: 'VAC et VAC+ : produits non inclus. CONFORT et CONFORT+ : tous les produits courants inclus (chlore, pH, floculant, algicide). Les produits exceptionnels facturés à part.'
+    answer: 'Non, les produits ne sont pas inclus dans les forfaits. Ils sont facturés en supplément selon vos besoins.'
   },
   {
     question: 'Intervenez-vous en urgence ?',
@@ -4412,9 +4523,12 @@ function bbRenderTravauxGallery() {
     return;
   }
   
-  container.innerHTML = bbTravauxPhotos.map(p => `
-    <div class="bb-gallery-card">
-      <img src="${p.src}" alt="${(p.title||'').replace(/"/g,'&quot;')}" class="bb-gallery-img" loading="lazy">
+  container.innerHTML = bbTravauxPhotos.map((p, i) => `
+    <div class="bb-gallery-card" onclick="bbOpenLightbox(${i})">
+      <div class="bb-gallery-img-wrapper">
+        <img src="${p.src}" alt="${(p.title||'').replace(/"/g,'&quot;')}" class="bb-gallery-img" loading="lazy">
+        <div class="bb-gallery-zoom">🔍 Cliquer pour agrandir</div>
+      </div>
       <div class="bb-gallery-info">
         <h3>${(p.title||'').replace(/</g,'&lt;')}</h3>
         <p>${(p.description||'').replace(/</g,'&lt;')}</p>
@@ -4422,6 +4536,66 @@ function bbRenderTravauxGallery() {
     </div>
   `).join('');
 }
+
+/* ====== LIGHTBOX ====== */
+window.bbOpenLightbox = function(index) {
+  let lb = document.getElementById('bb-lightbox');
+  if(!lb) {
+    lb = document.createElement('div');
+    lb.id = 'bb-lightbox';
+    lb.className = 'bb-lightbox';
+    lb.onclick = function(e) {
+      if(e.target.id === 'bb-lightbox' || e.target.classList.contains('bb-lightbox-close')) {
+        bbCloseLightbox();
+      }
+    };
+    document.body.appendChild(lb);
+  }
+  
+  const photo = bbTravauxPhotos[index];
+  if(!photo) return;
+  
+  lb.innerHTML = `
+    <button class="bb-lightbox-close" onclick="bbCloseLightbox()" aria-label="Fermer">×</button>
+    ${bbTravauxPhotos.length > 1 ? `
+      <button class="bb-lightbox-nav bb-lightbox-prev" onclick="bbLightboxPrev(${index})">‹</button>
+      <button class="bb-lightbox-nav bb-lightbox-next" onclick="bbLightboxNext(${index})">›</button>
+    ` : ''}
+    <div class="bb-lightbox-content">
+      <img src="${photo.src}" alt="${(photo.title||'').replace(/"/g,'&quot;')}" class="bb-lightbox-img">
+      <div class="bb-lightbox-caption">
+        <h3>${(photo.title||'').replace(/</g,'&lt;')}</h3>
+        <p>${(photo.description||'').replace(/</g,'&lt;')}</p>
+      </div>
+    </div>
+  `;
+  
+  lb.classList.add('bb-lightbox-active');
+  document.body.style.overflow = 'hidden';
+};
+
+window.bbCloseLightbox = function() {
+  const lb = document.getElementById('bb-lightbox');
+  if(lb) {
+    lb.classList.remove('bb-lightbox-active');
+    document.body.style.overflow = '';
+  }
+};
+
+window.bbLightboxPrev = function(currentIdx) {
+  const newIdx = currentIdx > 0 ? currentIdx - 1 : bbTravauxPhotos.length - 1;
+  bbOpenLightbox(newIdx);
+};
+
+window.bbLightboxNext = function(currentIdx) {
+  const newIdx = currentIdx < bbTravauxPhotos.length - 1 ? currentIdx + 1 : 0;
+  bbOpenLightbox(newIdx);
+};
+
+/* Échapper la touche Echap pour fermer */
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Escape') bbCloseLightbox();
+});
 
 /* ====== RENDU ARTICLES BLOG ====== */
 function bbRenderArticles() {
