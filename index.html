@@ -4149,5 +4149,474 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 </script>
+
+<!-- Lib Supabase via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script id="briblue-supabase-sync">
+/* ============================================================
+   SYNCHRONISATION SUPABASE
+   Sauvegarde forfaits, options et articles dans la base
+   ============================================================ */
+(function() {
+  "use strict";
+  
+  var SUPABASE_URL = "https://okruskevqpykqoyvqkqu.supabase.co";
+  var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rcnVza2V2cXB5a3FveXZxa3F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODAyODQsImV4cCI6MjA5Mjg1NjI4NH0.Le8ChwTmHAyQOWmNe9qKN_mQC-aCX_-iVEC3wmla9pk";
+  
+  var sb = null;
+  var ready = false;
+  
+  function initSupabase() {
+    if(typeof window.supabase === "undefined") {
+      console.warn("[Supabase] Bibliothèque non chargée");
+      return false;
+    }
+    try {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      ready = true;
+      console.log("[Supabase] Client initialisé");
+      return true;
+    } catch(e) {
+      console.error("[Supabase] Erreur init:", e);
+      return false;
+    }
+  }
+  
+  /* ====== FORFAITS ====== */
+  
+  async function loadForfaitsFromSupabase() {
+    if(!ready) return;
+    try {
+      var res = await sb.from("forfaits").select("*").order("ordre", {ascending: true});
+      if(res.error) throw res.error;
+      
+      if(res.data && res.data.length > 0) {
+        // Convertir au format attendu par le code (zonePrices au lieu de zone_prices)
+        var formatted = res.data.map(function(f) {
+          return {
+            id: f.id,
+            name: f.name,
+            tagline: f.tagline,
+            features: f.features || [],
+            prices: f.prices || [],
+            zonePrices: f.zone_prices || {},
+            color: f.color,
+            featured: f.featured,
+            ordre: f.ordre
+          };
+        });
+        DB.setObj("forfaits", formatted);
+        console.log("[Supabase] " + formatted.length + " forfaits chargés");
+      } else {
+        // Table vide : pousser les forfaits par défaut depuis localStorage
+        var local = DB.getObj("forfaits") || [];
+        if(local.length > 0) {
+          await saveForfaitsToSupabase(local);
+          console.log("[Supabase] Forfaits par défaut envoyés");
+        }
+      }
+    } catch(e) {
+      console.error("[Supabase] Erreur chargement forfaits:", e);
+    }
+  }
+  
+  async function saveForfaitsToSupabase(forfaits) {
+    if(!ready || !forfaits || !forfaits.length) return;
+    try {
+      // Préparer pour Supabase (zone_prices au lieu de zonePrices)
+      var rows = forfaits.map(function(f, i) {
+        return {
+          id: f.id,
+          name: f.name,
+          tagline: f.tagline || "",
+          features: f.features || [],
+          prices: f.prices || [],
+          zone_prices: f.zonePrices || {},
+          color: f.color || "",
+          featured: !!f.featured,
+          ordre: i
+        };
+      });
+      
+      // Upsert : insert ou update selon l'id
+      var res = await sb.from("forfaits").upsert(rows, {onConflict: "id"});
+      if(res.error) throw res.error;
+      console.log("[Supabase] " + rows.length + " forfaits sauvegardés");
+    } catch(e) {
+      console.error("[Supabase] Erreur sauvegarde forfaits:", e);
+    }
+  }
+  
+  async function deleteForfaitFromSupabase(id) {
+    if(!ready) return;
+    try {
+      await sb.from("forfaits").delete().eq("id", id);
+      console.log("[Supabase] Forfait " + id + " supprimé");
+    } catch(e) {
+      console.error("[Supabase] Erreur suppression forfait:", e);
+    }
+  }
+  
+  /* ====== OPTIONS ====== */
+  
+  async function loadOptionsFromSupabase() {
+    if(!ready) return;
+    try {
+      var res = await sb.from("options_services").select("*").order("ordre", {ascending: true});
+      if(res.error) throw res.error;
+      
+      if(res.data && res.data.length > 0) {
+        var formatted = res.data.map(function(o) {
+          return {
+            id: o.id,
+            name: o.name,
+            price: o.price,
+            desc: o.description,
+            emoji: o.emoji,
+            ordre: o.ordre
+          };
+        });
+        DB.setObj("options", formatted);
+        console.log("[Supabase] " + formatted.length + " options chargées");
+      } else {
+        var local = DB.getObj("options") || [];
+        if(local.length > 0) {
+          await saveOptionsToSupabase(local);
+        }
+      }
+    } catch(e) {
+      console.error("[Supabase] Erreur chargement options:", e);
+    }
+  }
+  
+  async function saveOptionsToSupabase(options) {
+    if(!ready || !options || !options.length) return;
+    try {
+      var rows = options.map(function(o, i) {
+        return {
+          id: o.id,
+          name: o.name,
+          price: o.price || "",
+          description: o.desc || "",
+          emoji: o.emoji || "",
+          ordre: i
+        };
+      });
+      var res = await sb.from("options_services").upsert(rows, {onConflict: "id"});
+      if(res.error) throw res.error;
+      console.log("[Supabase] " + rows.length + " options sauvegardées");
+    } catch(e) {
+      console.error("[Supabase] Erreur sauvegarde options:", e);
+    }
+  }
+  
+  async function deleteOptionFromSupabase(id) {
+    if(!ready) return;
+    try {
+      await sb.from("options_services").delete().eq("id", id);
+    } catch(e) {
+      console.error("[Supabase] Erreur suppression option:", e);
+    }
+  }
+  
+  /* ====== ARTICLES CONSEILS ====== */
+  
+  async function loadArticlesFromSupabase() {
+    if(!ready) return;
+    try {
+      var res = await sb.from("articles_conseils").select("*").eq("published", true).order("ordre", {ascending: true});
+      if(res.error) throw res.error;
+      
+      if(res.data && res.data.length > 0) {
+        var formatted = res.data.map(function(a) {
+          return {
+            id: a.id,
+            title: a.title,
+            tag: a.tag,
+            icon: a.icon,
+            excerpt: a.excerpt,
+            content: a.content,
+            image: a.image
+          };
+        });
+        window.A = formatted;
+        try { localStorage.setItem("briblue_articles", JSON.stringify(formatted)); } catch(e) {}
+        console.log("[Supabase] " + formatted.length + " articles chargés");
+        
+        // Rafraîchir l'affichage
+        if(typeof bbRenderArticles === "function") setTimeout(bbRenderArticles, 100);
+        if(typeof renderAdminArticles === "function") setTimeout(renderAdminArticles, 100);
+      } else {
+        // Pousser les articles par défaut s'il y en a localement
+        var local = window.A || [];
+        if(local.length > 0) {
+          await saveAllArticlesToSupabase(local);
+        }
+      }
+    } catch(e) {
+      console.error("[Supabase] Erreur chargement articles:", e);
+    }
+  }
+  
+  async function saveAllArticlesToSupabase(articles) {
+    if(!ready || !articles || !articles.length) return;
+    try {
+      var rows = articles.map(function(a, i) {
+        return {
+          id: a.id,
+          title: a.title,
+          tag: a.tag || "",
+          icon: a.icon || "",
+          excerpt: a.excerpt || "",
+          content: a.content || "",
+          image: a.image || "",
+          ordre: i,
+          published: true
+        };
+      });
+      var res = await sb.from("articles_conseils").upsert(rows, {onConflict: "id"});
+      if(res.error) throw res.error;
+      console.log("[Supabase] " + rows.length + " articles sauvegardés");
+    } catch(e) {
+      console.error("[Supabase] Erreur sauvegarde articles:", e);
+    }
+  }
+  
+  async function saveArticleToSupabase(article) {
+    if(!ready) return;
+    try {
+      var row = {
+        id: article.id,
+        title: article.title,
+        tag: article.tag || "",
+        icon: article.icon || "",
+        excerpt: article.excerpt || "",
+        content: article.content || "",
+        image: article.image || "",
+        published: true
+      };
+      var res = await sb.from("articles_conseils").upsert(row, {onConflict: "id"});
+      if(res.error) throw res.error;
+      console.log("[Supabase] Article sauvegardé:", article.title);
+    } catch(e) {
+      console.error("[Supabase] Erreur sauvegarde article:", e);
+    }
+  }
+  
+  async function deleteArticleFromSupabase(id) {
+    if(!ready) return;
+    try {
+      await sb.from("articles_conseils").delete().eq("id", id);
+      console.log("[Supabase] Article supprimé:", id);
+    } catch(e) {
+      console.error("[Supabase] Erreur suppression article:", e);
+    }
+  }
+  
+  /* ====== HOOKS sur les fonctions admin ====== */
+  
+  function installHooks() {
+    // Hook sur saveForfaits : après publication, sync vers Supabase
+    if(typeof window.saveForfaits === "function" && !window.saveForfaits.__bbHooked) {
+      var origSave = window.saveForfaits;
+      window.saveForfaits = function() {
+        var result = origSave.apply(this, arguments);
+        // Récupérer les forfaits actuels et envoyer vers Supabase
+        if(typeof getForfaits === "function") {
+          saveForfaitsToSupabase(getForfaits());
+        }
+        return result;
+      };
+      window.saveForfaits.__bbHooked = true;
+      console.log("[Supabase] Hook saveForfaits installé");
+    }
+    
+    // Hook sur saveOptions
+    if(typeof window.saveOptions === "function" && !window.saveOptions.__bbHooked) {
+      var origSO = window.saveOptions;
+      window.saveOptions = function() {
+        var result = origSO.apply(this, arguments);
+        if(typeof getOptions === "function") {
+          saveOptionsToSupabase(getOptions());
+        } else {
+          var opts = DB.getObj("options") || [];
+          if(opts.length) saveOptionsToSupabase(opts);
+        }
+        return result;
+      };
+      window.saveOptions.__bbHooked = true;
+      console.log("[Supabase] Hook saveOptions installé");
+    }
+    
+    // Hook sur addNewForfait pour sync immédiat
+    if(typeof window.addNewForfait === "function" && !window.addNewForfait.__bbHooked) {
+      var origAdd = window.addNewForfait;
+      window.addNewForfait = function() {
+        var result = origAdd.apply(this, arguments);
+        setTimeout(function() {
+          if(typeof getForfaits === "function") {
+            saveForfaitsToSupabase(getForfaits());
+          }
+        }, 100);
+        return result;
+      };
+      window.addNewForfait.__bbHooked = true;
+    }
+    
+    // Hook delete forfait
+    if(typeof window.deleteForfait === "function" && !window.deleteForfait.__bbHooked) {
+      var origDel = window.deleteForfait;
+      window.deleteForfait = function(idx) {
+        var fs = (typeof getForfaits === "function") ? getForfaits() : DB.getObj("forfaits");
+        var fId = fs && fs[idx] ? fs[idx].id : null;
+        var result = origDel.apply(this, arguments);
+        if(fId) deleteForfaitFromSupabase(fId);
+        return result;
+      };
+      window.deleteForfait.__bbHooked = true;
+    }
+    
+    // Hook addNewOption
+    if(typeof window.addNewOption === "function" && !window.addNewOption.__bbHooked) {
+      var origAddO = window.addNewOption;
+      window.addNewOption = function() {
+        var result = origAddO.apply(this, arguments);
+        setTimeout(function() {
+          var opts = DB.getObj("options") || [];
+          if(opts.length) saveOptionsToSupabase(opts);
+        }, 100);
+        return result;
+      };
+      window.addNewOption.__bbHooked = true;
+    }
+    
+    // Hook delete option
+    if(typeof window.deleteOption === "function" && !window.deleteOption.__bbHooked) {
+      var origDelO = window.deleteOption;
+      window.deleteOption = function(idx) {
+        var opts = DB.getObj("options") || [];
+        var oId = opts[idx] ? opts[idx].id : null;
+        var result = origDelO.apply(this, arguments);
+        if(oId) deleteOptionFromSupabase(oId);
+        return result;
+      };
+      window.deleteOption.__bbHooked = true;
+    }
+    
+    // Hook adminSaveArticle
+    if(typeof window.adminSaveArticle === "function" && !window.adminSaveArticle.__bbHooked) {
+      var origSA = window.adminSaveArticle;
+      window.adminSaveArticle = function() {
+        var result = origSA.apply(this, arguments);
+        // Récupérer le dernier article ajouté/modifié
+        var articles = (typeof getStoredArticles === "function") ? getStoredArticles() : (window.A || []);
+        if(articles.length) saveAllArticlesToSupabase(articles);
+        return result;
+      };
+      window.adminSaveArticle.__bbHooked = true;
+      console.log("[Supabase] Hook adminSaveArticle installé");
+    }
+    
+    // Hook artDelete
+    if(typeof window.artDelete === "function" && !window.artDelete.__bbHooked) {
+      var origAD = window.artDelete;
+      window.artDelete = function(i) {
+        var articles = (typeof getStoredArticles === "function") ? getStoredArticles() : (window.A || []);
+        var aId = articles[i] ? articles[i].id : null;
+        var result = origAD.apply(this, arguments);
+        if(aId) deleteArticleFromSupabase(aId);
+        return result;
+      };
+      window.artDelete.__bbHooked = true;
+    }
+    
+    // Hook artMoveUp/Down pour mettre à jour l'ordre
+    ["artMoveUp","artMoveDown"].forEach(function(fn) {
+      if(typeof window[fn] === "function" && !window[fn].__bbHooked) {
+        var orig = window[fn];
+        window[fn] = function() {
+          var result = orig.apply(this, arguments);
+          var articles = (typeof getStoredArticles === "function") ? getStoredArticles() : (window.A || []);
+          if(articles.length) saveAllArticlesToSupabase(articles);
+          return result;
+        };
+        window[fn].__bbHooked = true;
+      }
+    });
+  }
+  
+  /* ====== INIT ====== */
+  
+  async function start() {
+    // Attendre que la lib Supabase soit chargée
+    var attempts = 0;
+    while(typeof window.supabase === "undefined" && attempts < 30) {
+      await new Promise(function(r) { setTimeout(r, 100); });
+      attempts++;
+    }
+    
+    if(!initSupabase()) {
+      console.warn("[Supabase] Initialisation échouée, mode localStorage uniquement");
+      return;
+    }
+    
+    // Charger les données depuis Supabase
+    await Promise.all([
+      loadForfaitsFromSupabase(),
+      loadOptionsFromSupabase(),
+      loadArticlesFromSupabase()
+    ]);
+    
+    // Re-rendre les éléments dépendants
+    if(typeof renderForfaitsGrid === "function") renderForfaitsGrid();
+    if(typeof renderOptionsGrid === "function") renderOptionsGrid();
+    if(typeof renderAdminPricingMatrix === "function") renderAdminPricingMatrix();
+    if(typeof renderAdminForfaitsEditor === "function") {
+      // Ne re-render que si l'onglet admin est ouvert
+      var tab = document.getElementById("admin-tab-formules");
+      if(tab && !tab.classList.contains("hidden")) renderAdminForfaitsEditor();
+    }
+    if(typeof bbRenderArticles === "function") bbRenderArticles();
+    
+    // Installer les hooks (les fonctions admin doivent exister maintenant)
+    installHooks();
+    
+    // Re-tenter les hooks plus tard au cas où
+    setTimeout(installHooks, 1000);
+    setTimeout(installHooks, 3000);
+    
+    // Exposer pour debug
+    window.bbSupabase = {
+      client: sb,
+      reload: function() {
+        loadForfaitsFromSupabase();
+        loadOptionsFromSupabase();
+        loadArticlesFromSupabase();
+      },
+      saveForfaits: function() {
+        if(typeof getForfaits === "function") saveForfaitsToSupabase(getForfaits());
+      },
+      saveOptions: function() {
+        var opts = DB.getObj("options") || [];
+        if(opts.length) saveOptionsToSupabase(opts);
+      },
+      saveArticles: function() {
+        var arts = (typeof getStoredArticles === "function") ? getStoredArticles() : (window.A || []);
+        if(arts.length) saveAllArticlesToSupabase(arts);
+      }
+    };
+    
+    console.log("[Supabase] ✅ Synchronisation active. Tapez bbSupabase.reload() pour recharger.");
+  }
+  
+  if(document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+</script>
+
 </body>
 </html>
