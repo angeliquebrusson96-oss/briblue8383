@@ -3663,10 +3663,20 @@ function updatePoolCalc(){
      -----------------------------------------------------------------
      À COLLER À LA TOUTE FIN DE VOTRE index.html, JUSTE AVANT 
 <div id="page-travaux" class="page" style="display:none">
-  <section style="padding:60px 5% 80px"><h1>Travaux</h1><p>Page en construction...</p></section>
+  <section style="padding:60px 5% 80px;max-width:1200px;margin:0 auto">
+    <h1 style="font-size:2.5rem;color:#0a4f8c;margin-bottom:30px">Nos travaux</h1>
+    <div id="travaux-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px">
+      <!-- Photos seront injectées ici -->
+    </div>
+  </section>
 </div>
 <div id="page-conseils" class="page" style="display:none">
-  <section style="padding:60px 5% 80px"><h1>Conseils</h1><p>Page en construction...</p></section>
+  <section style="padding:60px 5% 80px;max-width:1200px;margin:0 auto">
+    <h1 style="font-size:2.5rem;color:#0a4f8c;margin-bottom:30px">Conseils d'expert</h1>
+    <div id="conseils-articles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:28px">
+      <!-- Articles seront injectés ici -->
+    </div>
+  </section>
 </div>
 <div id="page-entretien" class="page" style="display:none">
   <section style="padding:60px 5% 80px"><h1>Entretien</h1><p>Page en construction...</p></section>
@@ -3677,6 +3687,147 @@ function updatePoolCalc(){
 <div id="page-eauverte" class="page" style="display:none">
   <section style="padding:60px 5% 80px"><h1>Eau verte</h1><p>Page en construction...</p></section>
 </div>
+
+
+
+<script>
+// Données par défaut - Travaux (URLs Unsplash)
+window.travaux_photos = [
+  {
+    id: 1,
+    src: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+    title: "Installation local technique",
+    description: "Pose électrolyseur & pompe pH automatique"
+  },
+  {
+    id: 2,
+    src: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=600&q=80",
+    title: "Rénovation joints carrelage",
+    description: "Avant/après - Nettoyage et rénovation"
+  },
+  {
+    id: 3,
+    src: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&q=80",
+    title: "Rattrapage piscine eau verte",
+    description: "Nettoyage bassin & eau retrouvée"
+  }
+];
+console.log("[BriBlue] Travaux chargés :", window.travaux_photos.length);
+</script>
+
+
+<script>
+// Données par défaut - Articles Blog
+window.articles_blog = [
+  {
+    id: "ph-equilibre",
+    icon: "⚖️",
+    tag: "Bases",
+    title: "Comprendre et maintenir le pH de sa piscine",
+    excerpt: "Le pH idéal se situe entre 7,2 et 7,4. Découvrez comment le mesurer et le corriger.",
+    image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+    content: "<h2>Pourquoi le pH est important</h2><p>Un pH déséquilibré rend les désinfectants inefficaces et irrite la peau.</p>"
+  },
+  {
+    id: "eau-verte",
+    icon: "🌿",
+    tag: "Dépannage",
+    title: "Eau verte : que faire et comment l'éviter",
+    excerpt: "Votre piscine est devenue verte ? Voici la marche à suivre pour récupérer une eau cristalline.",
+    image: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&q=80",
+    content: "<h2>Causes de l'eau verte</h2><p>L'eau verte est causée par la prolifération d'algues.</p>"
+  },
+  {
+    id: "filtration",
+    icon: "⚙️",
+    tag: "Équipement",
+    title: "Bien régler la filtration de sa piscine",
+    excerpt: "La filtration est le poumon de votre piscine. Apprenez à la régler correctement.",
+    image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+    content: "<h2>Durée de filtration</h2><p>La règle : température ÷ 2 = heures de filtration minimum.</p>"
+  },
+  {
+    id: "hivernage",
+    icon: "❄️",
+    tag: "Saison",
+    title: "Comment hiverner correctement sa piscine",
+    excerpt: "Préparer sa piscine pour l'hiver est essentiel pour la protéger du gel.",
+    image: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&q=80",
+    content: "<h2>Hivernage actif vs passif</h2><p>Deux stratégies selon votre région.</p>"
+  },
+  {
+    id: "produits",
+    icon: "🧪",
+    tag: "Traitement",
+    title: "Les produits indispensables pour votre piscine",
+    excerpt: "Chlore, pH, floculant, algicide : on vous explique à quoi sert chaque produit.",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80",
+    content: "<h2>Le chlore</h2><p>Le chlore tue les bactéries et les algues.</p>"
+  },
+  {
+    id: "economies",
+    icon: "💰",
+    tag: "Astuces",
+    title: "7 astuces pour économiser sur l'entretien de sa piscine",
+    excerpt: "Une piscine bien gérée coûte moins cher. Découvrez nos astuces.",
+    image: "https://images.unsplash.com/photo-1601925268712-6d2bd87caf8b?w=600&q=80",
+    content: "<h2>Couvrir sa piscine</h2><p>Une bâche réduit l'évaporation de 90%.</p>"
+  }
+];
+console.log("[BriBlue] Articles chargés :", window.articles_blog.length);
+</script>
+
+
+
+<script>
+// Fonction pour afficher la galerie travaux
+function renderTravaux() {
+  const container = document.getElementById("travaux-gallery");
+  if(!container) return;
+  
+  const html = (window.travaux_photos || []).map((photo, i) => `
+    <div style="background:white;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08)">
+      <img src="${photo.src}" alt="${photo.title}" style="width:100%;height:280px;object-fit:contain;background:#f1f5f9;display:block">
+      <div style="padding:16px">
+        <h3 style="color:#0a4f8c;margin:0 0 6px;font-size:1.05rem;font-weight:700">${photo.title}</h3>
+        <p style="color:#64748b;margin:0;font-size:0.9rem;line-height:1.5">${photo.description}</p>
+      </div>
+    </div>
+  `).join("");
+  
+  container.innerHTML = html || "<p style='text-align:center;color:#94a3b8'>Aucune photo</p>";
+}
+
+// Fonction pour afficher les articles
+function renderArticles() {
+  const container = document.getElementById("conseils-articles");
+  if(!container) return;
+  
+  const html = (window.articles_blog || []).map(article => `
+    <article style="background:white;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.06);display:flex;flex-direction:column">
+      <div style="width:100%;height:200px;background:linear-gradient(135deg,#e0f2fe,#bae6fd);display:flex;align-items:center;justify-content:center;font-size:70px">
+        ${article.icon}
+      </div>
+      <div style="padding:22px;flex:1;display:flex;flex-direction:column">
+        <span style="display:inline-block;padding:3px 12px;background:#dbeafe;color:#1e40af;border-radius:12px;font-size:0.72rem;font-weight:600;margin-bottom:12px;width:fit-content">${article.tag}</span>
+        <h3 style="color:#0a4f8c;margin:0 0 10px;font-size:1.2rem;font-weight:700;line-height:1.3">${article.title}</h3>
+        <p style="color:#64748b;margin:0 0 18px;line-height:1.6;font-size:0.95rem;flex:1">${article.excerpt}</p>
+        <button style="background:#0a4f8c;color:white;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit;font-size:0.9rem;align-self:flex-start">Lire l'article →</button>
+      </div>
+    </article>
+  `).join("");
+  
+  container.innerHTML = html || "<p style='text-align:center;color:#94a3b8'>Aucun article</p>";
+}
+
+// Ajouter les containers si nécessaire
+window.addEventListener("DOMContentLoaded", function() {
+  renderTravaux();
+  renderArticles();
+});
+
+console.log("[BriBlue] Fonctions de rendu chargées");
+</script>
 
 </body>
      (ou après les <script> existants tout en bas)
