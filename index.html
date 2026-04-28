@@ -840,6 +840,7 @@ font-weight:600;
         <a class="sidebar-link" id="sl-clients" onclick="showAdminTab('clients')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Clients</a>
         <a class="sidebar-link" id="sl-devis" onclick="showAdminTab('devis')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:middle'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/></svg></span> Anciens devis</a>
         <a class="sidebar-link" id="sl-zones" onclick="showAdminTab('zones')"><span class="sicon"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg></span> Zones & Majorations</a>
+        <a class="sidebar-link" id="sl-articles" onclick="showAdminTab('articles')"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span> Articles & Conseils</a>
         <a class="sidebar-link" id="sl-notifs" onclick="showAdminTab('notifs')" style="position:relative"><span class="sicon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> Notifications <span id="adminNotifBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--danger);color:var(--white);border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:700;align-items:center;justify-content:center"></span></a>
       </div>
       <div class="sidebar-section">
@@ -1001,48 +1002,114 @@ font-weight:600;
     <p>Créez et gérez les articles affichés sur la page Conseils.</p>
   </div>
 
+  <style>
+  /* ===== ÉDITEUR ARTICLE ===== */
+  .art-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.art-editor-grid{grid-template-columns:1fr}}
+  .art-toolbar{display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-bottom:none;border-radius:10px 10px 0 0}
+  .art-toolbar button{padding:5px 10px;background:#fff;border:1px solid #dde4ef;border-radius:6px;cursor:pointer;font-size:0.82rem;font-weight:600;color:#334155;transition:all .15s;font-family:'DM Sans',sans-serif}
+  .art-toolbar button:hover{background:var(--aqua);color:var(--deep);border-color:var(--aqua)}
+  .art-toolbar .sep{width:1px;background:#dde4ef;margin:0 4px}
+  #art-editor{min-height:220px;padding:14px 16px;border:1.5px solid #e2e8f0;border-radius:0 0 10px 10px;font-family:'DM Sans',sans-serif;font-size:0.93rem;line-height:1.7;color:#1a2742;outline:none;background:#fff}
+  #art-editor:focus{border-color:var(--aqua);box-shadow:0 0 0 3px rgba(0,180,216,.10)}
+  #art-editor h2{font-family:'Playfair Display',serif;color:var(--deep);margin:12px 0 6px;font-size:1.15rem}
+  #art-editor ul,#art-editor ol{margin:8px 0 8px 22px}
+  #art-editor li{margin:3px 0}
+  #art-editor p{margin:6px 0}
+  .art-photo-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#f8fafc;position:relative}
+  .art-photo-drop:hover,.art-photo-drop.drag-over{border-color:var(--aqua);background:rgba(0,180,216,.05)}
+  .art-photo-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .art-photo-preview{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0;display:block;margin-bottom:10px}
+  .art-field-label{font-size:0.84rem;font-weight:700;color:#475569;margin-bottom:7px;display:block;text-transform:uppercase;letter-spacing:.5px}
+  .art-input{padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.92rem;width:100%;box-sizing:border-box;transition:border-color .15s}
+  .art-input:focus{border-color:var(--aqua);outline:none;box-shadow:0 0 0 3px rgba(0,180,216,.10)}
+  </style>
+
   <!-- FORMULAIRE AJOUT / MODIFICATION -->
   <div class="card" style="margin-bottom:24px" id="art-form-card">
-    <div class="card-header">
-      <h2 id="art-form-title">Ajouter un article</h2>
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+      <h2 id="art-form-title">✏️ Ajouter un article</h2>
+      <button onclick="artResetForm()" style="padding:7px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;font-size:0.85rem">✕ Nouveau</button>
     </div>
-    <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card-body">
       <input type="hidden" id="art-edit-id" value="">
-      
-      <label style="font-size:0.88rem;font-weight:600;color:#475569">Titre *</label>
-      <input id="art-title" type="text" placeholder="Ex: Comment traiter une eau verte ?" style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.92rem">
-      
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="font-size:0.88rem;font-weight:600;color:#475569;display:block;margin-bottom:6px">Catégorie *</label>
-          <input id="art-tag" type="text" placeholder="Ex: Dépannage, Bases, Saison..." style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.92rem;box-sizing:border-box">
+      <textarea id="art-content" style="display:none"></textarea>
+
+      <div class="art-editor-grid">
+        <!-- COLONNE GAUCHE : métadonnées + photo -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <div>
+            <span class="art-field-label">Titre *</span>
+            <input id="art-title" type="text" class="art-input" placeholder="Ex: Comment traiter une eau verte ?">
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <span class="art-field-label">Catégorie *</span>
+              <input id="art-tag" type="text" class="art-input" placeholder="Dépannage, Bases, Saison…">
+            </div>
+            <div>
+              <span class="art-field-label">Icône emoji</span>
+              <input id="art-icon" type="text" class="art-input" placeholder="💧 ⚙️ ❄️">
+            </div>
+          </div>
+
+          <div>
+            <span class="art-field-label">Résumé (carte)</span>
+            <textarea id="art-excerpt" class="art-input" rows="3" placeholder="Une phrase courte résumant l'article…" style="resize:vertical"></textarea>
+          </div>
+
+          <!-- PHOTO -->
+          <div>
+            <span class="art-field-label">📷 Photo de couverture</span>
+            <div id="art-photo-zone">
+              <div id="art-img-preview-wrap" style="display:none;margin-bottom:10px">
+                <img id="art-img-preview" src="" alt="" class="art-photo-preview">
+                <button onclick="artClearImg()" style="padding:5px 14px;background:#fee2e2;color:#dc2626;border:none;border-radius:7px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:'DM Sans',sans-serif">✕ Supprimer la photo</button>
+              </div>
+              <div class="art-photo-drop" id="art-drop-zone">
+                <input id="art-img-file" type="file" accept="image/*">
+                <div style="pointer-events:none">
+                  <div style="font-size:2rem;margin-bottom:6px">🖼️</div>
+                  <div style="font-weight:600;color:#334155;font-size:0.9rem">Cliquer ou glisser une photo</div>
+                  <div style="font-size:0.78rem;color:#94a3b8;margin-top:4px">JPG, PNG, WEBP — max 4 Mo</div>
+                </div>
+              </div>
+            </div>
+            <input id="art-img-b64" type="hidden">
+          </div>
+
         </div>
-        <div>
-          <label style="font-size:0.88rem;font-weight:600;color:#475569;display:block;margin-bottom:6px">Icône emoji</label>
-          <input id="art-icon" type="text" placeholder="Ex: 💧 ⚙️ ❄️" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.92rem;box-sizing:border-box">
+
+        <!-- COLONNE DROITE : éditeur texte riche -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="art-field-label">Contenu de l'article</span>
+          <div class="art-toolbar" id="art-toolbar">
+            <button onclick="artFmt('bold')" title="Gras"><b>G</b></button>
+            <button onclick="artFmt('italic')" title="Italique"><i>I</i></button>
+            <button onclick="artFmt('underline')" title="Souligné"><u>S</u></button>
+            <div class="sep"></div>
+            <button onclick="artFmtBlock('h2')" title="Titre">H2</button>
+            <button onclick="artFmtBlock('h3')" title="Sous-titre">H3</button>
+            <button onclick="artFmtBlock('p')" title="Paragraphe">¶</button>
+            <div class="sep"></div>
+            <button onclick="artFmt('insertUnorderedList')" title="Liste à puces">• Liste</button>
+            <button onclick="artFmt('insertOrderedList')" title="Liste numérotée">1. Liste</button>
+            <div class="sep"></div>
+            <button onclick="artFmt('removeFormat')" title="Effacer mise en forme" style="color:#ef4444">✕ Style</button>
+          </div>
+          <div id="art-editor" contenteditable="true" spellcheck="true"
+               style="flex:1;min-height:280px"
+               onInput="artSyncContent()"
+               placeholder="Rédigez votre article ici…"></div>
+          <div style="font-size:0.78rem;color:#94a3b8">Astuce : sélectionnez du texte puis cliquez sur G, I, H2, etc.</div>
         </div>
       </div>
-      
-      <label style="font-size:0.88rem;font-weight:600;color:#475569">Résumé (affiché sur la carte)</label>
-      <textarea id="art-excerpt" rows="2" placeholder="Une phrase courte décrivant l'article..." style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.92rem;resize:vertical"></textarea>
-      
-      <label style="font-size:0.88rem;font-weight:600;color:#475569">Contenu complet de l'article</label>
-      <textarea id="art-content" rows="8" placeholder="Rédigez votre article ici. Vous pouvez utiliser du HTML simple : &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;..." style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.92rem;resize:vertical"></textarea>
-      
-      <div style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:10px;padding:20px">
-        <label style="font-size:0.88rem;font-weight:600;color:#475569;display:block;margin-bottom:10px">📷 Photo de l'article</label>
-        <input id="art-img-file" type="file" accept="image/*" style="font-size:0.88rem;margin-bottom:10px">
-        <div id="art-img-preview-wrap" style="display:none;margin-top:10px">
-          <img id="art-img-preview" src="" alt="" style="max-width:200px;max-height:120px;object-fit:cover;border-radius:8px;border:2px solid #e2e8f0">
-          <button onclick="artClearImg()" style="display:block;margin-top:6px;padding:4px 12px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem">✕ Supprimer la photo</button>
-        </div>
-        <input id="art-img-b64" type="hidden">
-        <p style="font-size:0.8rem;color:#94a3b8;margin:8px 0 0">Si aucune photo : une couleur de fond avec l'icône sera utilisée.</p>
-      </div>
-      
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button onclick="adminSaveArticle()" class="btn-add">💾 Enregistrer l'article</button>
-        <button onclick="artResetForm()" style="padding:10px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit">✕ Annuler</button>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid #f0f4f8">
+        <button onclick="adminSaveArticle()" class="btn-add" style="padding:11px 26px">💾 Enregistrer l'article</button>
+        <button onclick="artResetForm()" style="padding:11px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif">✕ Annuler</button>
       </div>
     </div>
   </div>
@@ -1056,6 +1123,94 @@ font-weight:600;
     <div class="card-body" id="admin-articles-list"></div>
   </div>
 </div>
+
+<script>
+/* ===== ÉDITEUR RICHE ARTICLE ===== */
+function artFmt(cmd){document.getElementById('art-editor').focus();document.execCommand(cmd,false,null);artSyncContent();}
+function artFmtBlock(tag){document.getElementById('art-editor').focus();document.execCommand('formatBlock',false,tag);artSyncContent();}
+function artSyncContent(){
+  var html=document.getElementById('art-editor').innerHTML;
+  document.getElementById('art-content').value=html;
+}
+
+// Drag & drop photo
+(function(){
+  document.addEventListener('DOMContentLoaded',function(){
+    var dz=document.getElementById('art-drop-zone');
+    if(!dz) return;
+    dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag-over');});
+    dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over');});
+    dz.addEventListener('drop',function(e){
+      e.preventDefault();dz.classList.remove('drag-over');
+      var f=e.dataTransfer.files[0];
+      if(f&&f.type.startsWith('image/')) artLoadImageFile(f);
+    });
+  });
+})();
+
+function artLoadImageFile(file){
+  if(file.size>4*1024*1024){if(typeof showToast==='function')showToast('Photo trop lourde (max 4 Mo)','error');return;}
+  var r=new FileReader();
+  r.onload=function(ev){
+    var data=ev.target.result;
+    document.getElementById('art-img-b64').value=data;
+    var prev=document.getElementById('art-img-preview');
+    var wrap=document.getElementById('art-img-preview-wrap');
+    if(prev){prev.src=data;}
+    if(wrap){wrap.style.display='block';}
+  };
+  r.readAsDataURL(file);
+}
+
+// Surcharger l'event change pour art-img-file (au cas où l'ancien handler est déjà actif)
+document.addEventListener('change',function(e){
+  if(e.target.id==='art-img-file'){
+    var f=e.target.files[0];
+    if(f) artLoadImageFile(f);
+  }
+},{capture:true});
+</script>
+
+<script>
+/* ===== PATCH artEdit : remplir le contenteditable ===== */
+(function(){
+  var _origArtEdit=window.artEdit;
+  window.artEdit=function(i){
+    if(typeof _origArtEdit==='function') _origArtEdit(i);
+    // Remplir le contenteditable avec le contenu HTML
+    var a=(typeof getStoredArticles==='function'?getStoredArticles():(window.A||[]))[i];
+    if(!a) return;
+    var ed=document.getElementById('art-editor');
+    if(ed) ed.innerHTML=a.content||'';
+    var titleEl=document.getElementById('art-form-title');
+    if(titleEl) titleEl.textContent='✏️ Modifier : '+a.title;
+  };
+})();
+
+/* ===== PATCH artResetForm : vider le contenteditable ===== */
+(function(){
+  var _origReset=window.artResetForm;
+  window.artResetForm=function(){
+    if(typeof _origReset==='function') _origReset();
+    var ed=document.getElementById('art-editor');
+    if(ed) ed.innerHTML='';
+    var titleEl=document.getElementById('art-form-title');
+    if(titleEl) titleEl.textContent='✏️ Ajouter un article';
+  };
+})();
+
+/* ===== PATCH adminSaveArticle : utiliser innerHTML de l'éditeur ===== */
+(function(){
+  var _origSave=window.adminSaveArticle;
+  window.adminSaveArticle=function(){
+    // Synchroniser le contenteditable vers le textarea caché
+    var ed=document.getElementById('art-editor');
+    var ta=document.getElementById('art-content');
+    if(ed&&ta) ta.value=ed.innerHTML;
+    if(typeof _origSave==='function') return _origSave.apply(this,arguments);
+  };
+})();
+</script>
 
 <!-- ====================================================== -->
 <!-- ADMIN : Photos Hero (diapo accueil)                     -->
@@ -1486,6 +1641,27 @@ function updateBookingPriceEstimate(prefix='bk'){
 }
 
 /* ===== FORFAITS ===== */
+function getZones(){
+  var z = DB.getObj('zones') || {};
+  // Normaliser les clés en zone1, zone2, zone3 (le code attend ça)
+  var normalized = {};
+  // Si les clés sont 'Zone 1', 'Zone 2', 'Zone 3' → convertir
+  Object.keys(z).forEach(function(k){
+    var match = k.match(/zone\s*(\d+)/i);
+    if(match){
+      normalized['zone' + match[1]] = z[k];
+    } else {
+      normalized[k] = z[k];
+    }
+  });
+  // S'assurer que zone1, zone2, zone3 existent
+  ['zone1','zone2','zone3'].forEach(function(zk, i){
+    if(!normalized[zk]) normalized[zk] = {price: 100 + i*50, cities: []};
+    if(!normalized[zk].cities) normalized[zk].cities = [];
+  });
+  return normalized;
+}
+
 function getForfaits(){
   const f = DB.getObj('forfaits') || [];
   let changed = false;
@@ -1553,45 +1729,78 @@ function renderAdminPricingMatrix(){
   const zones=getZones();
   const citySummary=(z)=>{
     const list=zones['zone'+z]?.cities||[];
-    return list.length ? list.slice(0,5).join(', ')+(list.length>5?'…':'') : 'Aucune ville';
+    return list.length ? list.slice(0,4).join(', ')+(list.length>4?' +'+( list.length-4):'') : '<em style="color:#94a3b8">Aucune ville</em>';
   };
+  const zoneColors=['#0a4f8c','#0e6b5e','#7c3a1a'];
+  const zoneBg=['rgba(10,79,140,0.07)','rgba(14,107,94,0.07)','rgba(124,58,26,0.07)'];
   el.innerHTML=`
-    <div class="pricing-help">
-      <strong>Principe :</strong> le client choisit un forfait, la surface de piscine et sa ville. Le site retrouve automatiquement la zone de la ville, puis affiche le prix correspondant dans cette grille.
-      <br><span style="color:var(--muted)">Exemple : Forfait Confort + piscine -50 m² + ville en Zone 2 = prix de la case Zone 2 / -50 m².</span>
+    <div class="pricing-help" style="margin-bottom:20px">
+      <strong>🗺️ Comment ça marche :</strong> le client choisit un forfait, la surface de sa piscine et sa ville. Le site retrouve automatiquement la zone de la ville, puis affiche le prix de la case correspondante.
+      <br><span style="color:var(--muted)">Modifiez les prix ci-dessous puis cliquez <strong>Publier la grille</strong>. Les tarifs s'affichent immédiatement sur le site.</span>
     </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px">
+      ${[1,2,3].map((z,zi)=>`
+        <div style="background:${zoneBg[zi]};border:1.5px solid ${zoneColors[zi]}30;border-radius:12px;padding:14px 16px">
+          <div style="font-weight:800;color:${zoneColors[zi]};font-size:0.95rem;margin-bottom:4px">Zone ${z}</div>
+          <div style="font-size:0.8rem;color:#475569">${citySummary(z)}</div>
+          <a onclick="showAdminTab('zones')" style="font-size:0.76rem;color:var(--sky);cursor:pointer;margin-top:6px;display:inline-block">⚙ Gérer les villes →</a>
+        </div>
+      `).join('')}
+    </div>
+
     <div class="pricing-matrix-wrap">
       <table class="pricing-matrix">
         <thead>
           <tr>
-            <th rowspan="2" style="text-align:left">Forfait</th>
-            <th colspan="2">Zone 1<br><small style="font-weight:500;color:var(--muted)">${citySummary(1)}</small></th>
-            <th colspan="2">Zone 2<br><small style="font-weight:500;color:var(--muted)">${citySummary(2)}</small></th>
-            <th colspan="2">Zone 3<br><small style="font-weight:500;color:var(--muted)">${citySummary(3)}</small></th>
-            <th rowspan="2">Action</th>
+            <th rowspan="2" style="text-align:left;padding:14px 16px;font-size:0.82rem">Forfait</th>
+            ${[1,2,3].map((z,zi)=>`
+              <th colspan="2" style="background:${zoneBg[zi]};border-bottom:2px solid ${zoneColors[zi]}40;padding:10px 6px">
+                <span style="color:${zoneColors[zi]};font-weight:800">Zone ${z}</span>
+              </th>
+            `).join('')}
+            <th rowspan="2" style="font-size:0.8rem">Action</th>
           </tr>
           <tr>
-            <th>-50 m²</th><th>+50 m²</th>
-            <th>-50 m²</th><th>+50 m²</th>
-            <th>-50 m²</th><th>+50 m²</th>
+            ${[1,2,3].map(z=>`
+              <th style="font-size:0.75rem;font-weight:600;color:#64748b;padding:6px 4px">−50 m²</th>
+              <th style="font-size:0.75rem;font-weight:600;color:#64748b;padding:6px 4px">+50 m²</th>
+            `).join('')}
           </tr>
         </thead>
         <tbody>
           ${fs.map((f,fi)=>`
-            <tr>
-              <td class="pm-forfait">${f.name}<br><small style="font-weight:500;color:var(--muted)">${f.tagline||''}</small></td>
-              ${[1,2,3].map(z=>['lt50','gt50'].map(sz=>`
-                <td><input type="number" min="0" step="1" value="${getZonePriceInputValue(f,'zone'+z,sz)}" oninput="updateForfaitZonePrice(${fi},'zone${z}','${sz}',this.value)" data-fi="${fi}" data-zone="zone${z}" data-size="${sz}" aria-label="${f.name} Zone ${z} ${sz}"> €</td>
+            <tr style="${fi%2===1?'background:#fafbfd':''}">
+              <td class="pm-forfait" style="padding:12px 16px">
+                <div style="font-weight:800;color:var(--deep)">${f.name}</div>
+                <div style="font-size:0.78rem;color:var(--muted);font-weight:500">${f.tagline||''}</div>
+              </td>
+              ${[1,2,3].map((z,zi)=>['lt50','gt50'].map(sz=>`
+                <td style="padding:8px 6px;background:${sz==='gt50'?zoneBg[zi]+'':''}">
+                  <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+                    <input type="number" min="0" step="1"
+                      value="${getZonePriceInputValue(f,'zone'+z,sz)}"
+                      oninput="updateForfaitZonePrice(${fi},'zone${z}','${sz}',this.value)"
+                      data-fi="${fi}" data-zone="zone${z}" data-size="${sz}"
+                      style="width:80px;padding:7px 8px;border:1.5px solid #dbe4f0;border-radius:8px;text-align:right;font-family:'DM Sans',sans-serif;font-weight:700;color:${zoneColors[zi]};background:#fff;font-size:0.88rem">
+                    <span style="font-size:0.8rem;color:#94a3b8">€</span>
+                  </div>
+                </td>
               `).join('')).join('')}
-              <td><button class="btn-sm btn-edit" onclick="copyZone1PricesToAll(${fi})">Copier Z1</button></td>
+              <td style="padding:8px 6px;text-align:center">
+                <button class="btn-sm btn-edit" onclick="copyZone1PricesToAll(${fi})" title="Copier les prix Zone 1 vers Zone 2 et 3" style="white-space:nowrap;font-size:0.75rem;padding:5px 10px">
+                  ⎘ Z1 → 2,3
+                </button>
+              </td>
             </tr>
           `).join('')}
         </tbody>
       </table>
     </div>
-    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn-add" onclick="saveForfaits()">✅ Publier la grille</button>
-      <button class="btn-secondary" onclick="showAdminTab('zones')">Modifier les villes par zone</button>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn-add" onclick="saveForfaits()" style="padding:11px 24px">✅ Publier la grille de prix</button>
+      <button class="btn-secondary" onclick="showAdminTab('zones')" style="padding:11px 20px">🗺️ Gérer les zones & villes</button>
+      <span style="font-size:0.82rem;color:#94a3b8;margin-left:4px">Les prix sont enregistrés dans Supabase et s'affichent en temps réel sur le site.</span>
     </div>`;
 }
 function getZonePriceInputValue(f,zoneKey,sizeKey){
@@ -2307,7 +2516,7 @@ function renderClientDash(){
 }
 
 /* ===== ADMIN ===== */
-const ATABS=['overview','rdv','orders','products','formules','settings','devis','zones','clients','notifs','compte'];
+const ATABS=['overview','rdv','orders','products','formules','settings','devis','zones','articles','clients','notifs','compte','hero'];
 function showAdminTab(tab){
   ATABS.forEach(t=>{document.getElementById('admin-tab-'+t)?.classList.toggle('hidden',t!==tab);const sl=document.getElementById('sl-'+t);if(sl)sl.classList.toggle('active',t===tab);});
   if(tab==='overview') renderAdminDash();
@@ -2315,6 +2524,7 @@ function showAdminTab(tab){
   if(tab==='orders') document.getElementById('adminAllOrders').innerHTML=ordTable(DB.get('orders').reverse(),true);
   if(tab==='products') renderAdminProducts();
   if(tab==='formules'){renderAdminPricingMatrix();renderAdminForfaitsEditor();renderAdminOptionsEditor();}
+  if(tab==='articles'&&typeof renderAdminArticles==='function') renderAdminArticles();
   if(tab==='settings'){renderCitiesAdmin();renderResendStatus();renderAdminZonesEditor();}
   if(tab==='devis'){renderAdminZonesEditor();renderAdminDemandesDevis();}
   if(tab==='zones') renderZonesAdmin();
